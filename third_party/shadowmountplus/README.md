@@ -19,9 +19,11 @@
  If you want to support this project, you can donate
  - USDT (TRC-20):  **`TKaUGEwMm9KBXzEoiaaKYBX2yCHAKASW3p`**
  - USDT (ERC-20):  **`0x313dD245dBA957A5560618eA882d08e66aaFb430`**
+ - USDT (BEP20):   **`0x313dD245dBA957A5560618eA882d08e66aaFb430`**
  - USDC (Solana):  **`5kv7j2RbUGaSP1kU1cZWj9jHH7d6rfvxmK6YXTYbH4um`**
-
-
+ - BTC (Bitcoin):  **`bc1q58czpsrhz783hs8878tzlt4gatrjall9ulqduu`**
+ - Card payments:  **`https://boosty.to/drkamor/donate`**
+ 
 
 ## Current image support
 
@@ -40,11 +42,11 @@ Notes:
   registration, and source copy/move/delete operations on other titles, whether
   the application uses a folder, image, or installed PKG. Its own runtime, source
   and all backing image layers remain protected. Operations that would release
-  a shared image are refused. Ordinary games allow the same work after a
-  confirmed loss of AppFocus (for example, returning to the home menu), while
-  retaining protection for their own runtime and sources. Returning focus to an
-  ordinary game pauses scanning again. Unknown focus and pending launch/exit
-  transitions still defer background work.
+  a shared image are refused. Ordinary PS4/PS5 games allow the same work while
+  running, regardless of AppFocus. Forced and scheduled scans keep the live
+  title and its backing chain protected, and pace directory traversal while a
+  game is active. Pending launch/exit transitions and unknown runtime ownership
+  still defer work.
 - Backend, read-only mode, and sector size can be configured via `/data/shadowmount/config.ini`.
 - Debug logging is enabled by default (`debug=1`) and writes to console plus `/data/shadowmount/debug.log` (set `debug=0` to disable).
 - **UFS (`.ffpkg`) is the recommended image format for normal use.**
@@ -123,6 +125,12 @@ supported. Shares are contacted only for explicit browsing, checks and transfers
 
 Building requires the PS5 payload SDK's `libsmb2` headers and static library,
 in addition to the existing dependencies. See [SMB notices](licenses/SMB-NOTICES.txt).
+The first `make` also downloads and builds a checksum-pinned json-c 0.19 in
+`.deps/json-c` (Python 3, CMake and patch are required). This private library
+includes upstream fixes for container leaks with `NDEBUG`; the SDK's existing
+json-c archive is not used. Local builds and CI use the same dependency.
+PS5's placeholder locale APIs are disabled for JSON parsing to avoid leaking
+locale handles and sharing mutable locale state between API workers.
 
 ## Recommended FS choice
 

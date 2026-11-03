@@ -13,8 +13,9 @@ int hhp_game_sandbox_open_path(int pid,const char *generation,const char *title,
 // worker. The metadata digest binds JS's exact version to the native operation.
 int hhp_game_metadata_read(int pid,const char *generation,const char *title,
   unsigned char **bytes,size_t *length,char *reason,size_t capacity);
-// PS4 compatibility games may omit param.sfo from their mounted app0. In that
-// case only, use the registered title SFO predating this exact live process.
+// PS4 compatibility games may omit param.sfo from mounted app0 or expose an
+// empty character-device placeholder. In those cases only, use the registered
+// title SFO predating this exact live process.
 // The extended call reports this provenance rather than claiming sandbox data.
 int hhp_game_metadata_read_ex(int pid,const char *generation,const char *title,
   unsigned char **bytes,size_t *length,char *reason,size_t capacity,int *registered);

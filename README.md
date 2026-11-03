@@ -39,12 +39,46 @@
   payloads, and background services.
 </p>
 
-HyperHEN v0.9.4 combines exact firmware routing, the source-built HyperCore,
+HyperHEN v0.9.5 combines exact firmware routing, the source-built HyperCore,
 one common automount owner, firmware-gated Toolbox services, and a fully
 HyperHEN-branded native Settings interface. The visual system uses a unified
 64 px icon family and a progressive APNG HyperCore emblem. Firmware image
 decoders that do not play APNG display its complete first frame, so animation
 never gates the UI.
+
+### What's new in 0.9.5
+
+- **12.70 startup fix:** the exact route checks Bypervisor completion before
+  starting its dedicated HyperCore, with the corrected upstream 12.70
+  scalar-store offset. Boot through the Toolbox and HyperDeck was confirmed
+  on a 12.70 console. The standalone Bypervisor 12.70 ELF is unchanged.
+- **Manual PRX / SPRX loading:** copy a module to `/data/HyperHEN/plugins/`
+  or `/data/HyperHEN/sprx/`, enter its matching game, then load it from
+  **Toolbox → Plugins → SPRX**. **RaiDougie 1.56.2** is confirmed with
+  **GTA V CUSA00411 v1.56 on FW 10.01**; other plugin/game/firmware
+  combinations still require testing. See the [plugin guide](#plugins-and-sprx).
+- **ShadowMountPlus 1.7 beta11:** both standard and lite Automount engines
+  are updated while retaining HyperHEN's notifications, saved configuration
+  and route restrictions. The other Kstuff / HyperCore engines are retained.
+- **Hyper 7B voice progress:** **Qwen2.5 7B Q5_K_M** has completed a spoken
+  reply on console. It remains **experimental and very slow**; the retained
+  CPU optimizations and 512 MiB weight cache do not establish a new speed
+  benchmark or total memory requirement. The smallest model remains the
+  recommended starting point.
+- **Game memory:** disable Hyper and let its model unload before launching
+  demanding games or testing plugins. A resident 7B model was associated
+  with a GTA V black screen with audio in a reported test; the game opened
+  with Hyper disabled. Concurrent 7B/game operation is not validated.
+- **Continuity:** the 13.00/13.20/13.60 HyperCore path and 13.60 startup
+  runtime fix were already in 0.9.4 and are retained here, together with
+  HyperDeck, Advanced Debug, the 67 exact firmware profiles and the manual
+  WebKit-close handoff.
+
+Download [HyperHEN v0.9.5](https://github.com/Michele-M-Media/HYPERHEN/releases/download/HYPERHEN_V0_9_5/HyperHEN-v0.9.5.elf)
+or see the [0.9.5 release](https://github.com/Michele-M-Media/HYPERHEN/releases/tag/HYPERHEN_V0_9_5).
+
+The 0.9.4 and 0.9.3 sections below retain their release history. Current
+model status and usage instructions are in the Hyper section further down.
 
 ### What's new in 0.9.4
 
@@ -90,8 +124,8 @@ or see the [0.9.4 release](https://github.com/Michele-M-Media/HYPERHEN/releases/
 - **Consistent v0.9.3 branding**, including Console Information, and a
   dedicated experimental 13.60 Linux-loader input.
 
-See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the 0.9.4 changes and the retained
-0.9.3 history, including the dashboard/tool work since public 0.9.2.
+See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the 0.9.5 changes and the retained
+0.9.4 / 0.9.3 history, including the dashboard/tool work since public 0.9.2.
 
 <br>
 
@@ -109,7 +143,7 @@ inputs. Unsupported or non-exact profiles fail closed.
 ### Exact firmware profiles
 
 These are the **67 exact entries** declared by the router. The profile count
-already existed in 0.9.2; 0.9.4 retains those exact entries and the prior
+already existed in 0.9.2; 0.9.5 retains those exact entries and the prior
 route-specific service boundaries. Versions between listed entries are not implicit aliases.
 
 <!-- PROFILE_TABLE_BEGIN -->
@@ -130,8 +164,10 @@ The legacy selector keeps HyperCore unavailable below 3.00. These source
 profiles do not establish hardware testing on every console revision.
 
 The [technical overview](docs/COMPONENTS_AND_TECHNICAL_OVERVIEW.md#firmware-routing)
-retains the earlier component inventory; the table above is the current 0.9.4
-profile description. The 13.00/13.20/13.60 Bypervisor routes retain the restored
+retains the earlier component inventory; the table above is the current 0.9.5
+profile description. The 12.70 route retains its dedicated corrected HyperCore;
+its R48 boot was confirmed through Toolbox and HyperDeck. The
+13.00/13.20/13.60 Bypervisor routes retain the restored
 0.9.2 HyperCore component and the corrected 13.60 runtime.
 
 - **ShellUI Toolbox** — a settings page injected into the PS5 ShellUI
@@ -144,7 +180,7 @@ profile description. The 13.00/13.20/13.60 Bypervisor routes retain the restored
 - **Limited 13.xx route** — 13.40 and 13.42 use restricted Kstuff-lite, Automount-lite and Dashboard/Toolbox; backport/fakelib, emulator replacement and automatic AMPR features remain disabled
 - **Plugin runtime** — discovers, validates, starts, stops, and removes descriptor-bearing plugin ELFs
 - **Built-in debug services** — Toolbox switches for `klogsrv` (3232), `ftpsrv` (2121), and the LAN ELF loader (9025), with process-aware start/stop handling
-- **HyperHEN Automount** — ShadowMountPlus 1.7 beta9 standard/lite engines embedded as the common post-HEN stage for image, title, USB, and fakelib mount lifecycle
+- **HyperHEN Automount** — ShadowMountPlus 1.7 beta11 standard/lite engines embedded as the common post-HEN stage for image, title, USB, and fakelib mount lifecycle
 - **Remote Play pairing** — enable the native PS5 Remote Play service, generate a pairing PIN, and register a client from the Network section
 - **User payload manager** — start and stop user-provided `.elf` payloads, with optional auto-start
 - **Game overlay** — an in-game bar for FPS, CPU, GPU, RAM, temperatures, and network info
@@ -160,7 +196,7 @@ profile description. The 13.00/13.20/13.60 Bypervisor routes retain the restored
 - **Expanded Advanced Debug** — Firmware Spoof, NP Fake Sign-in, NanoDNS, Chukei DNS, zFTPd/zHTTP and firmware-gated Garlic Save Manager controls
 - **System-language selectors and notifications** — additional startup/status messages follow the console language while existing Toolbox translations and project credits are retained
 - **Startup/recovery checks** — manual WebKit closure, a two-second quiet interval and replacement-instance handling improve Toolbox handoff after payload launches
-- **Product version** — welcome, Toolbox/About, HyperDeck and Console Information report HyperHEN v0.9.4 while retaining the firmware information
+- **Product version** — welcome, Toolbox/About, HyperDeck and Console Information report HyperHEN v0.9.5 while retaining the firmware information
 - **Hyper voice assistant (beta)** — local DualSense microphone-to-speaker interaction, downloadable Qwen models and selectable voices, managed from its own main Toolbox entry
 
 HyperHEN does not include a kernel exploit. The first hop still needs an
@@ -216,7 +252,7 @@ an active download/install, and **Check status** reports its state.
 | Qwen2.5 3B Q4_K_M | 2.10 GB | Experimental / beta |
 | Qwen2.5 3B Q5_K_M | 2.44 GB | Experimental / beta |
 | Qwen2.5 7B Q4_K_M | 4.68 GB | Experimental / beta; high latency |
-| Qwen2.5 7B Q5_K_M | 5.44 GB | Experimental / beta; latest test timed out without a voice reply |
+| Qwen2.5 7B Q5_K_M | 5.44 GB | Spoken reply confirmed in development; experimental / beta, very high latency |
 
 Sizes use decimal MB/GB and describe model files, not RAM requirements. The
 shared speech-recognition model is about 78 MB, in addition to the AI model;
@@ -225,6 +261,21 @@ covers a complete Italian voice turn in the recorded working configuration,
 not certification of every firmware, language or conversation. Other
 languages follow the console setting; recognition, voice quality and answer
 quality vary by language and model. Current inference uses the CPU.
+
+**Before demanding games or plugin tests:** turn off **Enable Hyper** and
+wait for the assistant/model to stop. A resident 7B model was associated with
+a GTA V black screen with audio in a reported test; the game opened with
+Hyper disabled. The 512 MiB weight cache is only one allocation, not total
+assistant memory. Simultaneous 7B inference and demanding games are not a
+validated configuration.
+
+Qwen2.5 7B Q5_K_M completed a full Italian microphone-to-speaker turn on
+FW 10.01 in the R51 development test, taking about **138 seconds** overall.
+The retained R52 worker optimizes CPU callbacks and weight access, with the
+512 MiB cache and conversation-prefix reuse preserved. This local work does
+not establish a new console latency result: 7B remains experimental and
+unsuitable for quick replies. The other unconfirmed catalog entries remain
+beta.
 
 ### HyperLinux clean-boot mode
 
@@ -267,7 +318,7 @@ For these profiles, perform the steps in this order:
 2. Put the PS5 into **Rest Mode**.
 3. **Resume** the console and return to the dashboard.
 4. Open **WebKit again** and start the exploit host/loader as required.
-5. Launch **HyperHEN v0.9.4**.
+5. Launch **HyperHEN v0.9.5**.
 6. **Close WebKit manually** when prompted, then leave it closed for the
    two-second quiet interval while HyperHEN finishes loading Automount and
    the Toolbox.
@@ -281,7 +332,7 @@ choice and does not require an additional 5.xx download here. The
 ### Load HyperHEN
 
 1. After a full reboot when changing versions, follow the Bypervisor procedure above on 9.40, 12.70, 13.00, 13.20 or 13.60. On other routes, run the kernel exploit and start the external `elfldr` service.
-2. Send the downloaded `HyperHEN-v0.9.4.elf` or locally built `HyperHEN.elf` through the loader your exploit host provides; on Bypervisor profiles, this is the second WebKit session after resume.
+2. Send the downloaded `HyperHEN-v0.9.5.elf` or locally built `HyperHEN.elf` through the loader your exploit host provides; on Bypervisor profiles, this is the second WebKit session after resume.
 3. HyperHEN uses the exact firmware route and opens the legacy/5.xx engine selector where supported. On exact 11.60–12.60 profiles, wait for the compatibility-mode notification and runtime check.
 4. If the engine selector appears, confirm your choice, then **close the WebKit/browser window manually when prompted**. On other routes, manually close the payload-host browser after launching HyperHEN.
 5. Keep the browser closed, allow the two-second quiet interval and let initialization finish before opening PS5 Settings and entering the HyperHEN Toolbox. FW 13.40 and 13.42 use the restricted lite route rather than utility-only mode.
@@ -340,7 +391,7 @@ Garlic Save Manager, with component- and firmware-specific availability checks.
 
 ### Mount integration
 
-HyperHEN embeds ShadowMountPlus 1.7 beta9 and starts it only
+HyperHEN embeds ShadowMountPlus 1.7 beta11 and starts it only
 after the selected firmware route is ready. It is the sole active automount
 owner. Before HyperCore starts, the bootstrapper claims the kstuff automount
 sentinel; HyperCore's native scanner and integrated BackPork monitor then stay
@@ -385,6 +436,28 @@ Play service to confirm the registered device.
 
 The feature provides pairing and registration only. Video streaming and client
 transport remain handled by Sony's native Remote Play service.
+
+### Plugins and SPRX
+
+The **Plugins** section of the main Toolbox contains the separate **SPRX**
+page for game-process `.prx` and `.sprx` modules. Descriptor-bearing HyperHEN
+plugin ELFs continue to use the Plugins page.
+
+1. Copy your compatible `.prx` or `.sprx` file directly into
+   `/data/HyperHEN/plugins/` or `/data/HyperHEN/sprx/`. HyperHEN prepares
+   these directories during startup; do not put game modules in `payloads/`.
+2. Start the exact game and update the module was made for, and enter the game.
+3. Open **HyperHEN Toolbox → Plugins → SPRX**, select the file, then choose
+   **Load in current game**. Return to the game to let loading complete.
+4. Use the module's own controls. For the confirmed **RaiDougie 1.56.2**
+   configuration, **L1 + □ (Square)** opens its menu.
+
+The confirmed development test used **GTA V CUSA00411 v1.56, FW 10.01**
+and **RaiDougie1.56.2.prx** in R71. This does not establish support for every
+plugin, region, game update or firmware. Loading is manual; close the game
+to unload a game-process module. Removing a catalog entry keeps the module
+file and does not unload a running module. Disable Hyper and release its
+model before testing plugins with demanding games.
 
 ### Payloads
 
@@ -440,7 +513,7 @@ Cheats load from disk. If a file changes, HyperHEN reloads it without restarting
 
 ### Full build
 
-For the tagged 0.9.4 release-compatible build, use the new helper:
+For the tagged 0.9.5 release-compatible build, use the new helper:
 
 ```shell
 export PS5_PAYLOAD_SDK=/path/to/ps5-payload-sdk
@@ -448,11 +521,12 @@ bash scripts/build_release.sh --jobs 6
 ```
 
 A Git checkout also needs
-[HyperHEN-v0.9.4-build-inputs.zip](https://github.com/Michele-M-Media/HYPERHEN/releases/download/HYPERHEN_V0_9_4/HyperHEN-v0.9.4-build-inputs.zip)
+[HyperHEN-v0.9.5-build-inputs.zip](https://github.com/Michele-M-Media/HYPERHEN/releases/download/HYPERHEN_V0_9_5/HyperHEN-v0.9.5-build-inputs.zip)
 extracted at the repository root. The complete source ZIP already includes
 these checksum-verified inputs. This recipe rebuilds the first-party interfaces
-and uses the retained R45 engines, Hyper worker, Automount beta9 and the
-isolated CRT with the 13.60 fix. Output is `build-release/bin/HyperHEN.elf`.
+and uses the retained firmware engines, dedicated corrected 12.70 HyperCore,
+R52 Hyper worker, Automount beta11 and the isolated CRT with the retained
+13.60 fix. Output is `build-release/bin/HyperHEN.elf`.
 See [BUILD_RELEASE.md](BUILD_RELEASE.md) for the complete SDK/runtime
 requirements, input boundaries and optional Hyper worker rebuild.
 
@@ -465,7 +539,7 @@ export PS5_PAYLOAD_SDK=/path/to/ps5-payload-sdk
 
 That script validates the vendored dependencies, builds HyperCore and HyperHEN
 Automount locally, and then builds the embed chain in the required order. Its
-source outputs are separate from the retained inputs used by the 0.9.4
+source outputs are separate from the retained inputs used by the 0.9.5
 release-compatible helper above.
 
 The existing Docker developer recipe is:
@@ -569,7 +643,8 @@ default from [`config.ini.example`](config.ini.example).
 | Path | Purpose |
 | --- | --- |
 | `/data/HyperHEN/payloads/` | User payload ELFs |
-| `/data/HyperHEN/plugins/` | Descriptor-bearing HyperHEN plugin ELFs |
+| `/data/HyperHEN/plugins/` | HyperHEN plugin ELFs and manually discovered PRX/SPRX files |
+| `/data/HyperHEN/sprx/` | Alternate PRX/SPRX discovery directory and SPRX catalog |
 | `/data/HyperHEN/cheats/` | Cheat files |
 | `/data/HyperHEN/cheats_tmp/` | Temporary HTTPS ZIP and extraction files, cleaned after sync |
 | `/data/HyperHEN/HyperHEN.log` | Main runtime log |
@@ -656,6 +731,7 @@ engineering, and project maintenance: **MICHELE MEDIA**.
 
 - [OnionHEN](https://github.com/aydencharles/onionHEN) — original modular stack, retained under GPLv3 with its copyright notices and internal `onion::*` compatibility API
 - [etaHEN](https://github.com/LightningMods/etaHEN) — LightningMods and contributors; source base of this tree
+- [etaHEN 11.00–13.60 community port](https://github.com/GronedWaffel/etahen-11.00-13.60) — **GronedWaffel**, based on **LightningMods and the etaHEN contributors**; the supplied fork was a reference for the private process-read path used by the plugin runtime, with upstream libNineS authorship and GPL notices retained.
 - [GoldHEN](https://github.com/GoldHEN/GoldHEN) — SiSTR0 and contributors; the PS4 all-in-one HEN this project takes after
 
 ### Referenced
@@ -667,6 +743,8 @@ engineering, and project maintenance: **MICHELE MEDIA**.
 
 ### Used or embedded
 
+- [etaHEN-Plugins](https://github.com/etaHEN/etaHEN-Plugins) — **etaHEN developers and contributors**; plugin container and runtime-layout references, alongside the existing etaHEN attribution above.
+- [GoldHEN Plugins SDK](https://github.com/GoldHEN/GoldHEN_Plugins_SDK) — **SiSTRo, ctn123, OSM, jocover, bucanero, OpenOrbis contributors and nik**; module activation conventions and compatibility ABI references. The MIT-licensed SDK retains its notices; this does not imply full GoldHEN plugin compatibility.
 - [PS5 Payload SDK](https://github.com/ps5-payload-dev/sdk) — Prospero toolchain and headers
 - [elfldr](https://github.com/ps5-payload-dev/elfldr) — John Törnblom; external first-hop loader on port 9021. HyperHEN also builds isolated private (9020) and debug-LAN (9025) loader variants from its retained in-tree loader source
 - [klogsrv](https://github.com/ps5-payload-dev/klogsrv) — John Törnblom, with current port/quiet argument work by Al-Azif; the verified upstream PS5 ELF is embedded for the Toolbox log-server switch
@@ -742,4 +820,5 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before redistribution.
 
 > HyperHEN is an unofficial homebrew project and is not affiliated with Sony Interactive Entertainment.
 > Use it only on hardware you own and at your own risk. No warranty is provided.
+
 

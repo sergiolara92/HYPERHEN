@@ -6,8 +6,12 @@
 #include <onion/proc_query.h>
 #include <onion/sprx_plugin_manager.hpp>
 #include <onion/plugin_staging.hpp>
+#include <onion/sprx_discovery.hpp>
 
 #include <ps5/kernel.h>
+#include <cerrno>
+#include <sys/stat.h>
+#include <onion/plugin_diagnostic.hpp>
 
 #include <mutex>
 #include <string>
@@ -69,6 +73,30 @@ Runtime &runtime() {
   return value;
 }
 
+const std::vector<std::string> &discovery_roots() {
+  static const std::vector<std::string> roots = {
+      "/data/HyperHEN/plugins", "/data/HyperHEN/sprx"};
+  return roots;
+}
+
+bool catalog_absent() {
+  struct stat info{};
+  return lstat(kCatalogPath, &info) != 0 && errno == ENOENT;
+}
+
+onion::sprx::SprxOperationResult prepare_catalog_directory() {
+  // The data root must already exist and cannot be redirected by a link.
+  struct stat info{};
+  for (const char *path : {"/data", "/data/HyperHEN"})
+    if (lstat(path, &info) != 0 || !S_ISDIR(info.st_mode))
+      return {false, "plugin data directory is unavailable"};
+  if (mkdir("/data/HyperHEN/sprx", 0755) != 0 && errno != EEXIST)
+    return {false, "cannot create plugin catalog directory"};
+  if (lstat("/data/HyperHEN/sprx", &info) != 0 || !S_ISDIR(info.st_mode))
+    return {false, "plugin catalog directory is not a regular directory"};
+  return {true, {}};
+}
+
 void log_report(const char *operation,
                 const onion::sprx::SprxStartupReport &report) {
   for (const auto &issue : report.issues)
@@ -127,23 +155,76 @@ bool is_current_target(Runtime &current, pid_t pid, uint32_t app_id,
 
 } // namespace
 
-void start() { run("startup", true); }
+void start() {
+  // Create the optional SPRX catalog directory before the first UI scan.
+  // Some PS5 runtimes report ENOTDIR for an absent O_DIRECTORY leaf.
+  const auto prepared = prepare_catalog_directory();
+  if (!prepared)
+    LOG_WARN("[sprx-manager] startup catalog directory: %s", prepared.error.c_str());
+  run("startup", true);
+}
 void reconcile() { run("reconcile", false); }
 
-std::vector<onion::sprx::SprxInventoryEntry> inventory() {
+std::vector<onion::sprx::SprxInventoryEntry> inventory(std::string *error) {
+  if (error) error->clear();
   Runtime &current = runtime();
   std::lock_guard<std::mutex> lock(current.mutex);
   // A catalog copied after startup must become visible without restarting the
   // game or daemon. Loading a catalog no longer dispatches any module.
-  if(!current.manager.load_catalog(kCatalogPath)) return {};
-  return current.manager.inventory();
+  std::vector<onion::sprx::SprxCatalogIssue> issues;
+  if (!current.manager.load_catalog(kCatalogPath, &issues)) {
+    struct stat info{};
+    // No catalog yet is an empty installation. Other failures must be visible.
+    const bool absent = lstat(kCatalogPath, &info) != 0 && errno == ENOENT;
+    if (!absent && error) {
+      const auto &issue = issues.empty()
+          ? onion::sprx::SprxCatalogIssue{0, {}, "plugin catalog could not be loaded"}
+          : issues.front();
+      *error = onion::ipc::plugin_diagnostic(
+          (issue.line ? "Catalog line " + std::to_string(issue.line) + ": " : "Catalog: ") +
+          issue.message);
+    }
+    if (!absent) return {};
+  }
+  auto entries = current.manager.inventory();
+  const auto discovered = onion::sprx::discover_sprx_files(current.manager.catalog(), discovery_roots());
+  if (!discovered.error.empty()) {
+    LOG_WARN("[sprx-manager] inventory discovery failed: %s", discovered.error.c_str());
+    if (error) *error = onion::ipc::plugin_diagnostic(discovered.error);
+    return entries;
+  }
+  entries.insert(entries.end(), discovered.candidates.begin(), discovered.candidates.end());
+  return entries;
 }
 
 onion::sprx::SprxOperationResult set_enabled(std::string_view id,
                                              bool enabled) {
   Runtime &current = runtime();
   std::lock_guard<std::mutex> lock(current.mutex);
-  if(!current.manager.load_catalog(kCatalogPath)) return {false, "plugin catalog could not be loaded"};
+  if (!current.manager.load_catalog(kCatalogPath) && !catalog_absent())
+    return {false, "plugin catalog could not be loaded"};
+  const auto catalog = current.manager.catalog();
+  if (!catalog.find(id)) {
+    if (!enabled) return {false, "unregistered plugin cannot be disabled"};
+    const auto discovered = onion::sprx::discover_sprx_files(catalog, discovery_roots());
+    if (!discovered.error.empty()) return {false, discovered.error};
+    const onion::sprx::SprxInventoryEntry *candidate = nullptr;
+    for (const auto &item : discovered.candidates) if (item.id == id) { candidate = &item; break; }
+    if (!candidate) return {false, "plugin file is no longer available; refresh the list"};
+    std::string error;
+    if (!onion::sprx::valid_discovered_sprx(candidate->path, discovery_roots(), &error)) return {false, error};
+    onion::sprx::SprxTarget target;
+    if (!current.target.current(&target) || target.title_id.empty() || target.version.empty())
+      return {false, "start the exact target game before registering this plugin"};
+    const auto directory = prepare_catalog_directory();
+    if (!directory) return directory;
+    onion::sprx::SprxManifestEntry entry;
+    entry.id = candidate->id; entry.path = candidate->path;
+    entry.exact_title_ids = {target.title_id}; entry.game_version = target.version;
+    entry.auto_start = false;
+    const auto registered = current.manager.register_entry(entry);
+    if (!registered) return registered;
+  }
   return current.manager.set_enabled(id, enabled);
 }
 

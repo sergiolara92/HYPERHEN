@@ -15,6 +15,7 @@
 #endif
 #include "plugin_manager_runtime.hpp"
 #include "sprx_plugin_manager_runtime.hpp"
+#include <onion/plugin_diagnostic.hpp>
 #include <msg.hpp>
 #include <atomic>
 #include <string>
@@ -69,10 +70,12 @@ std::string plugin_inventory_page(size_t offset) {
   return onion_cjson::print_owned(root);
 }
 
-std::string sprx_inventory_page(size_t offset) {
-  constexpr size_t kPageSize = 8;
+std::string sprx_inventory_page(size_t offset, std::string &error) {
+  // Discovery paths are bounded to255 UTF-8 bytes. Four entries also leave
+  // room for JSON escaping within the unchanged4096-byte IPC response.
+  constexpr size_t kPageSize = 4;
   const std::vector<onion::sprx::SprxInventoryEntry> inventory =
-      onion::daemon::sprx_plugins::inventory();
+      onion::daemon::sprx_plugins::inventory(&error);
   const size_t begin = std::min(offset, inventory.size());
   const size_t end = std::min(begin + kPageSize, inventory.size());
   cJSON *root = cJSON_CreateObject();
@@ -84,6 +87,7 @@ std::string sprx_inventory_page(size_t offset) {
     cJSON_AddStringToObject(item, "id", entry.id.c_str());
     cJSON_AddStringToObject(item, "path", entry.path.c_str());
     cJSON_AddBoolToObject(item, "enabled", entry.enabled);
+    cJSON_AddBoolToObject(item, "registered", entry.registered);
     cJSON_AddBoolToObject(item, "auto_start", entry.auto_start);
     cJSON_AddNumberToObject(item, "priority", entry.priority);
     cJSON_AddBoolToObject(item, "matches_current_target",
@@ -202,7 +206,12 @@ void handleIPC(clientArgs *client, std::string &inputStr,
       reply(sender_app, true, "invalid SPRX inventory offset");
       break;
     }
-    const std::string page = sprx_inventory_page(static_cast<size_t>(offset));
+    std::string error;
+    const std::string page = sprx_inventory_page(static_cast<size_t>(offset), error);
+    if (!error.empty()) {
+      reply(sender_app, true, error);
+      break;
+    }
     if (page.size() >= DAEMON_BUFF_MAX) {
       reply(sender_app, true, "SPRX inventory page exceeds IPC frame");
       break;
@@ -251,8 +260,11 @@ void handleIPC(clientArgs *client, std::string &inputStr,
             ? onion::daemon::sprx_plugins::set_enabled(
                   id, onion_cjson::bool_item(my_json.get(), "enabled"))
             : onion::daemon::sprx_plugins::remove(id);
+    // Accepted is not initialized: preserve the existing runtime's pending
+    // marker through the same IPC ordinal and frame shape.
     reply(sender_app, !result.success,
-          result.success ? std::string("ok") : result.error);
+          result.success && result.error != onion::ipc::kPluginPending
+              ? std::string("ok") : result.error);
     break;
   }
   case BREW_ENABLE_TOOLBOX: {

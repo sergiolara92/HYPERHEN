@@ -4,7 +4,8 @@
 
 #include "bootstrap_notify.h"
 #include "kstuff_probe.h"
-#include "hypercore_13xx_rollback.h"
+#include "hypercore_public_v092_route.h"
+#include "hypercore_1270_diagnostic_route.h"
 #include "automount_preflight.h"
 #include "automount_route_proof.h"
 
@@ -1145,10 +1146,16 @@ static bool launch_hypercore(LaunchContext *context,
                                  ? (size_t)kstuff_1270_size
                                  : (lite ? (size_t)kstuff_lite_size
                                          : (size_t)kstuff_size));
-  if (hypercore_13xx_uses_public_v092(firmware_version)) {
+  const HyperCoreImageRoute core_image_route =
+      hypercore_image_route(firmware_version);
+  if (core_image_route == HYPERCORE_IMAGE_PUBLIC_V092_13XX) {
     elf = kstuff_13xx_v092_start;
     size = (size_t)kstuff_13xx_v092_size;
-    LOG_INFO("R38 / R37 Hyper retained: selecting public v0.9.2 HyperCore on 13.xx; Automount beta9 retained");
+    LOG_INFO("R38 / R37 Hyper retained: selecting public v0.9.2 HyperCore on 13.xx; Automount beta11 retained");
+  } else if (core_image_route == HYPERCORE_IMAGE_DIAGNOSTIC_1270) {
+    elf = kstuff_1270_start;
+    size = (size_t)kstuff_1270_size;
+    LOG_INFO("R48 12.70: applying upstream scalar-store correction; preserving diagnostics and other firmware cores");
   }
   const bool sent = launch_blob(context, elf, size,
                                 lite ? "HyperCore lite"
@@ -1183,6 +1190,16 @@ static bool prepare_hypercore_mode(uint32_t firmware_version) {
   const OnionFirmwareRoute route = onion_firmware_route(firmware_version);
   onion_ready_clear(ONION_READY_HYPERCORE_NO_PPR);
   onion_ready_clear(ONION_READY_HYPERCORE_LITE);
+  if (hypercore_1270_uses_public_v092(firmware_version)) {
+    if (!hypercore_1270_prepare_public_v092(
+            firmware_version, onion_ready_is_set, onion_ready_signal)) {
+      LOG_ERROR("12.70 public HyperCore handoff requires completed Bypervisor and a writable no-PPR marker");
+      bootstrap_notify("notify.boot.component_prepare_failed", "HyperCore 12.70");
+      return false;
+    }
+    LOG_INFO("12.70: verified Bypervisor completion; prepared public v0.9.2 no-PPR contract");
+    return true;
+  }
   if (route == ONION_FIRMWARE_ROUTE_KSTUFF_LITE) {
     if (!onion_ready_signal(ONION_READY_HYPERCORE_LITE)) {
       LOG_ERROR("Cannot publish HyperCore lite route marker");
@@ -1265,7 +1282,7 @@ static bool validate_5xx_engine_state(Onion5xxBootMode mode) {
 
 int bootstrap_launch_services(uint32_t firmware_version, bool kstuff_autoload,
                               Onion5xxBootMode boot_mode_5xx) {
-  LOG_INFO("HyperHEN %s R29 ShellUI startup guard (Automount beta9 retained) fw=0x%08x",
+  LOG_INFO("HyperHEN %s R72 ShellUI startup guard (Automount beta11 retained) fw=0x%08x",
            HYPERHEN_VERSION, firmware_version & 0xffff0000U);
   const OnionFirmwareRoute route = onion_firmware_route(firmware_version);
   const uint32_t capabilities = onion_firmware_capabilities(

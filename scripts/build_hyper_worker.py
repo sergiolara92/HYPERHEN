@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the R45 Hyper worker against checksum-pinned release AI libraries.
+"""Rebuild the R52 Hyper worker against checksum-pinned release AI libraries.
 
 This optional developer recipe does not download models or change the installed SDK.
 The ordinary release build embeds the retained, verified worker instead.
@@ -33,7 +33,7 @@ def main():
         if not Path(command[command.index('-c')+1]).is_file():raise ValueError('Missing worker source')
         if not Path(command[0]).is_file():raise ValueError('Missing SDK compiler')
     if args.check_only:
-        print('R45 worker inputs and isolated CRT: PASS');return
+        print('R52 worker inputs and isolated CRT: PASS');return
     build.mkdir(parents=True,exist_ok=True)
     for command in commands:(build/command[command.index('-o')+1]).parent.mkdir(parents=True,exist_ok=True)
     def compile_one(command):subprocess.run(command,cwd=build,check=True)

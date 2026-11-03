@@ -63,8 +63,11 @@ public:
     HyperDialogue(HyperDialogue &&) = delete;
     HyperDialogue &operator=(HyperDialogue &&) = delete;
 
+    // exchange_elapsed_ms accounts for capture/handshake/STT already consumed.
+    // Only bounded7B uses it to reserve time inside the existing voice exchange.
     HyperDialogueReply reply(const std::string &input, Cancel cancel = nullptr,
-                             void *cancel_context = nullptr) noexcept;
+                             void *cancel_context = nullptr,
+                             std::uint64_t exchange_elapsed_ms = 0) noexcept;
     // Initializes weights and context without adding a conversational turn.
     // Its timeout is independent of every later reply() request.
     HyperDialogueStatus prepare(Cancel cancel = nullptr, void *cancel_context = nullptr) noexcept;

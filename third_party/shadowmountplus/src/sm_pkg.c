@@ -32,6 +32,11 @@
 #define PKG_ENTRY_PARAM_JSON 0x2000u
 #define PKG_PATCH_FLAG_MASK 0x40100000u
 
+bool sm_pkg_is_media_remaster(const sm_pkg_info_t *info) {
+  return info && info->content_type == 0x26u &&
+         (info->content_flags & 0x40400000u) == 0x40400000u;
+}
+
 typedef struct { sm_pkg_read_fn read; void *ctx; int error; } pkg_reader_t;
 static bool read_at(pkg_reader_t *reader, uint64_t offset, void *buffer, size_t size) {
   int status = (reader->read)(reader->ctx, offset, buffer, size);
@@ -167,6 +172,15 @@ static void copy_string(char *out, size_t out_size, const char *value) {
     length = out_size - 1u;
   memcpy(out, value, length);
   out[length] = '\0';
+}
+
+static bool package_content_id_valid(const char *content_id) {
+  if (!content_id[0]) return false;
+  for (size_t i = 0; content_id[i]; ++i) {
+    unsigned char c = (unsigned char)content_id[i];
+    if (i >= MAX_CONTENT_ID - 1u || (!isalnum(c) && c != '-' && c != '_')) return false;
+  }
+  return true;
 }
 
 static bool pkg_extension(const char *name) {
@@ -353,9 +367,12 @@ static bool parse_param_json(const uint8_t *data, size_t size,
         json_object_is_type(value, json_type_string))
       candidate->sdk_version = parse_json_sdk(json_object_get_string(value));
     if (json_object_object_get_ex(root, "contentId", &value) &&
-        json_object_is_type(value, json_type_string))
-      copy_string(candidate->content_id, sizeof(candidate->content_id),
-                  json_object_get_string(value));
+        json_object_is_type(value, json_type_string)) {
+      const char *content_id = json_object_get_string(value);
+      size_t length = (size_t)json_object_get_string_len(value);
+      if (length >= sizeof(candidate->content_id) || memchr(content_id, '\0', length)) ok = false;
+      else copy_string(candidate->content_id, sizeof(candidate->content_id), content_id);
+    }
     if (json_object_object_get_ex(root, "titleId", &value) &&
         json_object_is_type(value, json_type_string))
       copy_string(candidate->title_id, sizeof(candidate->title_id),
@@ -496,13 +513,11 @@ static bool parse_package(const char *path, const struct stat *st,
   }
   memcpy(candidate->content_id, header + 0x40, content_length);
   candidate->content_id[content_length] = '\0';
-  for (size_t i = 0; i < content_length; ++i) {
-    unsigned char c = (unsigned char)candidate->content_id[i];
-    if (!isalnum(c) && c != '-' && c != '_') { return false; }
-  }
+  if (!package_content_id_valid(candidate->content_id)) return false;
   bool parsed = read_pkg_sfo(fd, base, header, file_size, candidate);
   if (!parsed)
     return false;
+  if (!package_content_id_valid(candidate->content_id)) return false;
   if (candidate->title_id[0] == '\0')
     (void)content_title_id(candidate->content_id, candidate->title_id);
   if (candidate->title_id[0] == '\0')
@@ -520,16 +535,17 @@ static bool parse_package(const char *path, const struct stat *st,
                         strcasecmp(candidate->category, "ps5dp") == 0;
   candidate->pkg_classification_confident =
       candidate->content_type == 0x1Au || candidate->content_type == 0x1Bu ||
-      candidate->content_type == 0x20u || candidate->content_type == 0x21u || delta;
-  if (candidate->content_type == 0x26u) {
-    candidate->pkg_kind = PKG_KIND_UNKNOWN;
-    candidate->pkg_classification_confident = false;
-  } else if (candidate->content_type == 0x1Bu ||
+      candidate->content_type == 0x1Cu ||
+      candidate->content_type == 0x20u || candidate->content_type == 0x21u ||
+      candidate->content_type == 0x26u || delta;
+  if (candidate->content_type == 0x1Bu ||
+             candidate->content_type == 0x1Cu ||
              candidate->content_type == 0x21u) {
     candidate->pkg_kind = PKG_KIND_DLC;
     if (candidate->category[0] == '\0')
       copy_string(candidate->category, sizeof(candidate->category), "ac");
-  } else if (delta || patch_category || (candidate->content_flags & PKG_PATCH_FLAG_MASK) != 0) {
+  } else if (delta || patch_category ||
+             (!sm_pkg_is_media_remaster(candidate) && (candidate->content_flags & PKG_PATCH_FLAG_MASK) != 0)) {
     candidate->pkg_kind = PKG_KIND_PATCH;
     if (candidate->category[0] == '\0')
       copy_string(candidate->category, sizeof(candidate->category), "gp");

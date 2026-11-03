@@ -35,6 +35,18 @@ bool path_matches_root_or_child(const char *path, const char *root) {
   return path[root_len] == '\0' || path[root_len] == '/';
 }
 
+bool paths_overlap(const char *a, const char *b) {
+  if (!a || !a[0] || !b || !b[0])
+    return false;
+  if (path_matches_root_or_child(a, b) || path_matches_root_or_child(b, a))
+    return true;
+  char resolved_a[PATH_MAX], resolved_b[PATH_MAX];
+  const char *left = realpath(a, resolved_a) ? resolved_a : a;
+  const char *right = realpath(b, resolved_b) ? resolved_b : b;
+  return path_matches_root_or_child(left, right) ||
+         path_matches_root_or_child(right, left);
+}
+
 static const char *find_usb_storage_root(const char *path) {
   static const char *usb_roots[] = {
       "/mnt/usb0", "/mnt/usb1", "/mnt/usb2", "/mnt/usb3", "/mnt/usb4",

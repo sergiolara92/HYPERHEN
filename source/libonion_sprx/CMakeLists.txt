@@ -5,38 +5,63 @@ project(${basename} C CXX)
 
 onion_module_prologue(C_STANDARD 17 CXX_STANDARD 20)
 
+set(_game_runtime "${HYPERHEN_THIRD_PARTY_DIR}/tachen-plugin-runtime/game-runtime")
 set(_worker_dir "${CMAKE_CURRENT_BINARY_DIR}/worker")
 file(MAKE_DIRECTORY "${_worker_dir}")
 add_custom_command(OUTPUT "${_worker_dir}/worker.bin"
   COMMAND "${CMAKE_C_COMPILER}" -c -O2 -ffreestanding -fPIC
     -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables
-    -mno-red-zone -mno-avx -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/source/plugin_worker.c" -o "${_worker_dir}/worker.o"
+    -mno-red-zone -mno-avx -I "${_game_runtime}"
+    "${_game_runtime}/game-gate.c" -o "${_worker_dir}/worker.o"
   COMMAND "${CMAKE_LINKER}" --no-undefined
-    -T "${CMAKE_CURRENT_SOURCE_DIR}/source/plugin_worker.ld"
+    -T "${_game_runtime}/game-gate.ld"
     "${_worker_dir}/worker.o" -o "${_worker_dir}/worker.elf"
   COMMAND "${CMAKE_OBJCOPY}" -O binary --only-section=.text
     "${_worker_dir}/worker.elf" "${_worker_dir}/worker.bin"
-  DEPENDS source/plugin_worker.c source/plugin_worker.ld include/onion/plugin_worker.h
+  DEPENDS "${_game_runtime}/game-gate.c" "${_game_runtime}/game-gate.ld" "${_game_runtime}/game-gate.h"
   VERBATIM)
 set_source_files_properties(source/plugin_worker_blob.c PROPERTIES
   OBJECT_DEPENDS "${_worker_dir}/worker.bin")
 
+# Private command4-only adapter image, separate from the unchanged R50 gate.
+set(_rai_dir "${CMAKE_CURRENT_BINARY_DIR}/raidougie")
+file(MAKE_DIRECTORY "${_rai_dir}")
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_custom_command(OUTPUT "${_rai_dir}/raidougie_bridge_blob.h"
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/source/build_gate.py"
+    "${CMAKE_CURRENT_SOURCE_DIR}/source" "${_rai_dir}" "${_rai_dir}/raidougie_bridge_blob.h"
+  DEPENDS source/raidougie_bridge.c source/raidougie_bridge.ld source/raidougie_compat.h source/build_gate.py
+  VERBATIM)
+set_source_files_properties(source/ptrace_sprx_runtime.cpp PROPERTIES
+  OBJECT_DEPENDS "${_rai_dir}/raidougie_bridge_blob.h")
+
 add_library(${PROJECT_NAME} STATIC
   source/sprx_loader.cpp
   source/sprx_catalog.cpp
+  source/sprx_discovery.cpp
   source/sprx_plugin_manager.cpp
   source/ptrace_sprx_runtime.cpp
   source/plugin_worker_blob.c
   source/plugin_staging.cpp
+  source/raidougie_compat.c
   source/plugin_metadata.cpp
+  "${_game_runtime}/game-inject.c"
+  "${_game_runtime}/game-lease.c"
+  "${_game_runtime}/game-syscall.c"
+  "${_game_runtime}/game-syscall-core.c"
+  "${_game_runtime}/game-imports.c"
+  "${_game_runtime}/memory-map.c"
+  "${_game_runtime}/publication.c"
+  "${_game_runtime}/game-trampoline.cpp"
+  "${_game_runtime}/relocate.cpp"
+  "${_game_runtime}/hde64.cpp"
   "${HYPERHEN_THIRD_PARTY_DIR}/tachen-plugin-runtime/prx-image.c"
   "${HYPERHEN_THIRD_PARTY_DIR}/tachen-plugin-runtime/process-info.c"
   "${HYPERHEN_THIRD_PARTY_DIR}/tachen-plugin-runtime/game-info.c"
   "${HYPERHEN_THIRD_PARTY_DIR}/tachen-plugin-runtime/game-source.c"
-  "${HYPERHEN_THIRD_PARTY_DIR}/cheat_support/sha256.c"
+  source/sha256_defined.c
 )
-target_compile_definitions(${PROJECT_NAME} PRIVATE
+target_compile_definitions(${PROJECT_NAME} PRIVATE HDE_DECODE_ONLY
   HYPERHEN_PLUGIN_WORKER_BIN="${_worker_dir}/worker.bin")
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}")
 
@@ -49,7 +74,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Os -DNDEBUG")
 
 target_include_directories(${PROJECT_NAME}
   PUBLIC  "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  PRIVATE "${PROJECT_ROOT}/libonion_elfldr/include"
+  PRIVATE "${_game_runtime}"
+          "${_rai_dir}"
+          "${PROJECT_ROOT}/libonion_elfldr/include"
           "${HYPERHEN_THIRD_PARTY_DIR}/tachen-plugin-runtime"
           "${HYPERHEN_THIRD_PARTY_DIR}/cheat_support"
           "${HYPERHEN_THIRD_PARTY_DIR}/cjson"

@@ -35,6 +35,10 @@ bool cache_image_mount(const char *path, const char *mount_point,
 bool cache_image_source_mapping(const char *path, const char *mount_point);
 // Return a cached image mount entry by index.
 bool get_image_cache_entry(int index, image_cache_entry_t *entry_out);
+// Find one active physical backing path under one lock. Metadata-only mappings
+// do not block ejection. The optional output is copied before releasing the lock.
+bool image_cache_find_active_source_under(const char *root,
+                                           char *path_out, size_t path_size);
 // Find a cached source path with one cache lock acquisition.
 bool find_image_cache_entry(const char *path, image_cache_entry_t *entry_out,
                              int *index_out);

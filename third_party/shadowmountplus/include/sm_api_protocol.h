@@ -11,6 +11,7 @@
 #define SM_API_ROUTE_FAVICON "/favicon.png"
 #define SM_API_ROUTE_VERSION "/api/v1/version"
 #define SM_API_ROUTE_STORAGE "/api/v1/storage"
+#define SM_API_ROUTE_STORAGE_EJECT "/api/v1/storage/eject"
 #define SM_API_ROUTE_IMAGES "/api/v1/images"
 #define SM_API_ROUTE_GAMES "/api/v1/games"
 #define SM_API_ROUTE_GAME_INFO "/api/v1/games/info"

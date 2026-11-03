@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Release-compatible 0.9.4 build. Keeps the established engine inputs frozen.
+# Release-compatible 0.9.5 build. Keeps the established engine inputs frozen.
 # No dependency downloads, SDK changes, or automatic build-tree deletion.
 set -euo pipefail
 
@@ -46,7 +46,7 @@ done
 [[ -d "${PS5_PAYLOAD_SDK}/target/include/c++/v1" ]] || die 'SDK C++ headers are missing'
 [[ -f "${release_root}/source/CMakeLists.txt" ]] || die 'source/CMakeLists.txt is missing'
 [[ -d "${release_root}/third_party" ]] || die 'third_party is missing'
-[[ "$(tr -d '\r\n' < "${release_root}/VERSION")" == '0.9.4' ]] || die 'this helper expects VERSION=0.9.4'
+[[ "$(tr -d '\r\n' < "${release_root}/VERSION")" == '0.9.5' ]] || die 'this helper expects VERSION=0.9.5'
 
 components="${release_root}/release-components"
 inputs="${release_root}/release-inputs"
@@ -106,15 +106,15 @@ cmake -S "${release_root}/source" -B "$build_dir" -G Ninja \
   "-DCMAKE_CXX_STANDARD_LIBRARIES=${crt}" \
   -DHYPERHEN_RELEASE_COMPONENT_DIR="$components" \
   -DHYPERHEN_SOURCE_PLUGIN_RUNTIME=ON \
-  -DHYPERHEN_STABLE_SHELLUI_ELF= \
+  -DHYPERHEN_STABLE_SHELLUI_ELF="${components}/shellui.elf" \
   -DHYPERHEN_INTEGRATED_HYPER=ON \
-  -DHYPER_ASSISTANT_ELF="${components}/hyper_assistant_r45.elf" \
+  -DHYPER_ASSISTANT_ELF="${components}/hyper_assistant_r52.elf" \
   -DHYPER_VOICES_ZIP="${inputs}/hyper/hyper-voices.zip" \
   -DHYPERHEN_P5_STABLE_COMPONENT_DIR="$components" \
   -DHYPERHEN_STABLE_INNER_LOADER_ELF="${components}/hyperhen_elfldr_inner.elf" \
   -DHYPERHEN_EXPERIMENTAL_HYPERSHELL=ON \
   -DHYPERHEN_P5_REUSE_STABLE_HYPERDECK=ON \
-  -DHYPERHEN_STABLE_HYPERDECK_ELF= \
+  -DHYPERHEN_STABLE_HYPERDECK_ELF="${components}/hyperdeck-websrv.elf" \
   -DHYPERHEN_STABLE_PKG_HELPER_ELF="${components}/hyperdeck-pkg-helper.elf" \
   -DHYPERHEN_STABLE_HYPERSHELL_ELF="${components}/liveshell.elf" \
   -DHYPERHEN_CORE_940_ELF="${components}/hypercore_940.elf" \

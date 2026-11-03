@@ -146,6 +146,55 @@ static int test_sprx_config_has_status_and_path(void) {
   return 0;
 }
 
+static int test_discovered_sprx_name_and_manual_registration(void) {
+  toolbox_i18n::set_lang(toolbox_i18n::Lang::En);
+  SprxInventoryItem candidate{.id="file.123456789012345678901234",
+      .path="/data/plugins/RaiDougie<&.prx",.registered=false};
+  TEST_ASSERT_TRUE(sprx_display_name(candidate)=="RaiDougie<&.prx");
+  TEST_ASSERT_TRUE(sprx_list_status(candidate)=="Not registered for the current game");
+  ps5ui::Page list("id_sprx","SPRX");
+  append_sprx_list_links(list,{candidate});
+  const auto xml=list.build();
+  TEST_ASSERT_TRUE(xml.find("RaiDougie&lt;&amp;.prx")!=std::string::npos);
+  TEST_ASSERT_TRUE(xml.find("sprx_file.123456789012345678901234.xml")!=std::string::npos);
+  ps5ui::Page config("id_sprx_config",sprx_display_name(candidate));
+  fill_sprx_config(config,candidate);
+  const auto config_xml=config.build();
+  TEST_ASSERT_TRUE(config_xml.find("Register and load in current game")!=std::string::npos);
+  TEST_ASSERT_TRUE(config_xml.find("id_external_sprx_enabled_file.")!=std::string::npos);
+  TEST_ASSERT_TRUE(config_xml.find("id_external_sprx_delete_")==std::string::npos);
+  TEST_ASSERT_TRUE(config_xml.find("value=\"0\"")!=std::string::npos);
+  candidate.registered=true;
+  TEST_ASSERT_TRUE(sprx_display_name(candidate)=="RaiDougie<&.prx");
+  ps5ui::Page registered("id_sprx_config",sprx_display_name(candidate));
+  fill_sprx_config(registered,candidate);
+  TEST_ASSERT_TRUE(registered.build().find("id_external_sprx_delete_")!=std::string::npos);
+  return 0;
+}
+
+static int test_discovered_names_are_bounded_and_safe(void) {
+  SprxInventoryItem entry{.id="file.123456789012345678901234",.path="/data/plugins/\xe2\x80\xaehidden\n<&.prx",.registered=false};
+  TEST_ASSERT_TRUE(sprx_display_name(entry)=="hidden <&.prx");
+  entry.path="/data/plugins/"+std::string(1000,'a');
+  TEST_ASSERT_TRUE(sprx_display_name(entry).size()==240);
+  entry.path="/data/plugins/";
+  TEST_ASSERT_TRUE(sprx_display_name(entry)==entry.id);
+  SprxInventoryItem old{.id="legacy",.path="/data/legacy.prx"};
+  TEST_ASSERT_TRUE(old.registered);
+  TEST_ASSERT_TRUE(sprx_display_name(old)=="legacy");
+  return 0;
+}
+
+static int test_plugins_page_exposes_sprx_link(void) {
+  toolbox_i18n::set_lang(toolbox_i18n::Lang::En);
+  ps5ui::Page page("id_plugins","Plugins");
+  append_sprx_page_link(page);
+  const auto xml=page.build();
+  TEST_ASSERT_TRUE(xml.find("id_plugins_sprx")!=std::string::npos);
+  TEST_ASSERT_TRUE(xml.find("file=\"sprx.xml\"")!=std::string::npos);
+  return 0;
+}
+
 extern "C" int test_plugin_sprx_pages_suite(void) {
   int fails = 0;
   fails += onion_test_run("plugin_pages.flat_list", test_plugin_list_is_flat_links);
@@ -154,5 +203,8 @@ extern "C" int test_plugin_sprx_pages_suite(void) {
   fails += onion_test_run("sprx_pages.flat_list", test_sprx_list_is_flat_links);
   fails += onion_test_run("sprx_pages.config_status",
                           test_sprx_config_has_status_and_path);
+  fails += onion_test_run("sprx_pages.discovered_manual",test_discovered_sprx_name_and_manual_registration);
+  fails += onion_test_run("sprx_pages.bounded_names",test_discovered_names_are_bounded_and_safe);
+  fails += onion_test_run("plugin_pages.sprx_link",test_plugins_page_exposes_sprx_link);
   return fails;
 }

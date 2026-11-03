@@ -15,7 +15,6 @@
 #include "sm_log.h"
 #include "sm_mdbg.h"
 #include "sm_path_utils.h"
-#include "sm_paths.h"
 #include "sm_pkg_backport.h"
 #include "sm_runtime.h"
 #include "sm_scan.h"
@@ -25,8 +24,6 @@
 
 #define MAX_PENDING_GAME_EXEC_CANDIDATES 32
 #define GAME_SANDBOX_ROOT "/mnt/sandbox"
-#define PPR_FIH_PROBE_SIZE 0x28
-#define PPR_SUPERBLOCK_MARKER_OFFSET 0x370
 
 typedef struct {
   bool active;
@@ -101,10 +98,6 @@ static void publish_background_game_state(bool was_active) {
   bool active = published_game_active(pid, pending);
   uint64_t state = active ? GAME_BACKGROUND_BLOCKED : GAME_BACKGROUND_IDLE;
   const char *title = g_active_game_title_id;
-  uint64_t focus = atomic_load(&g_app_focus_state);
-  bool background = g_active_game_app_id != 0 &&
-      (focus & GAME_APP_FOCUS_KNOWN) != 0 &&
-      (uint32_t)focus != g_active_game_app_id;
   if (pid > 0 && is_supported_game_title_id(title)) {
     uint64_t prefix = 0;
     for (size_t i = 0; i < 4u; ++i)
@@ -113,9 +106,9 @@ static void publish_background_game_state(bool was_active) {
     for (size_t i = 4u; i < 9u; ++i)
       number = number * 10u + (uint32_t)(title[i] - '0');
     state = GAME_BACKGROUND_TITLE_BASE + prefix * GAME_BACKGROUND_TITLE_RANGE + number;
-    bool ordinary_game = strncmp(title, "PPSA", 4u) == 0 ||
-                         strncmp(title, "CUSA", 4u) == 0;
-    if (pending || (ordinary_game && !background))
+    // A confirmed live title can be protected individually, irrespective of
+    // focus. Transitions still block work until ownership is settled.
+    if (pending)
       state |= GAME_BACKGROUND_TITLE_BLOCKED;
   }
   uint64_t previous = atomic_exchange(&g_background_game_state, state);
@@ -204,90 +197,6 @@ static bool title_is_usb_backed(const char *title_id, const char *source_path,
     return true;
   }
   return has_mount_link && is_usb_storage_path(source_path);
-}
-
-static uint64_t load_u64_unaligned(const uint8_t *data) {
-  uint64_t value;
-  memcpy(&value, data, sizeof(value));
-  return value;
-}
-
-static bool pread_exact_at(int fd, void *buffer, size_t size, off_t offset) {
-  uint8_t *bytes = (uint8_t *)buffer;
-  size_t total = 0;
-  while (total < size) {
-    ssize_t count = pread(fd, bytes + total, size - total,
-                          offset + (off_t)total);
-    if (count > 0) {
-      total += (size_t)count;
-      continue;
-    }
-    if (count < 0 && errno == EINTR)
-      continue;
-    return false;
-  }
-  return true;
-}
-
-static bool package_is_plaintext_ppr(const char *path) {
-  static const uint8_t plaintext_marker[16] = {
-      'P', 'P', 'R', 'P', 'L', 'A', 'I', 'N',
-      '-', 'N', 'O', 'A', 'U', 'T', 'H', '!'};
-  uint8_t fih[PPR_FIH_PROBE_SIZE];
-  uint8_t marker[sizeof(plaintext_marker)];
-
-  int fd = open(path, O_RDONLY);
-  if (fd < 0)
-    return false;
-
-  struct stat st;
-  bool matched = false;
-  if (fstat(fd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_size < 0 ||
-      !pread_exact_at(fd, fih, sizeof(fih), 0)) {
-    goto done;
-  }
-
-  uint64_t superblock_offset = load_u64_unaligned(fih + 0x20);
-  uint64_t file_size = (uint64_t)st.st_size;
-  if (superblock_offset > file_size ||
-      PPR_SUPERBLOCK_MARKER_OFFSET > file_size - superblock_offset ||
-      sizeof(marker) > file_size - superblock_offset -
-                           PPR_SUPERBLOCK_MARKER_OFFSET) {
-    goto done;
-  }
-
-  off_t marker_offset =
-      (off_t)(superblock_offset + PPR_SUPERBLOCK_MARKER_OFFSET);
-  matched = pread_exact_at(fd, marker, sizeof(marker), marker_offset) &&
-            memcmp(marker, plaintext_marker, sizeof(marker)) == 0;
-
-done:
-  close(fd);
-  return matched;
-}
-
-static bool title_uses_plaintext_ppr_package(
-    const char *title_id, char package_path_out[MAX_PATH]) {
-  static const char *const package_path_formats[] = {
-      APP_BASE "/%s/app.pkg",
-      "/mnt/ext0/user/app/%s/app.pkg",
-      "/mnt/ext0/ps5/user/app/%s/app.pkg",
-      "/mnt/ext1/user/app/%s/app.pkg",
-  };
-
-  package_path_out[0] = '\0';
-  for (size_t i = 0;
-       i < sizeof(package_path_formats) / sizeof(package_path_formats[0]);
-       ++i) {
-    int written = snprintf(package_path_out, MAX_PATH, package_path_formats[i],
-                           title_id);
-    if (written < 0 || written >= MAX_PATH)
-      continue;
-    if (package_is_plaintext_ppr(package_path_out))
-      return true;
-  }
-  package_path_out[0] = '\0';
-  return false;
 }
 
 static uint64_t min_nonzero_u64(uint64_t a, uint64_t b) {
@@ -1141,24 +1050,10 @@ static void *game_lifecycle_watcher_main(void *arg) {
             active_game && title_is_usb_backed(
                                suspended_game_title_id, source_path,
                                has_mount_link);
-        char plaintext_ppr_path[MAX_PATH];
-        bool plaintext_ppr_pkg_game =
-            active_game && !has_mount_link &&
-            title_uses_plaintext_ppr_package(suspended_game_title_id,
-                                             plaintext_ppr_path);
         clear_all_pending_game_launches();
         sm_mdbg_game_shutdown();
         bool sleep_cleanup_complete = true;
-        if (plaintext_ppr_pkg_game) {
-          log_debug("  [SLEEP] plaintext-PPR package detected: %s",
-                    plaintext_ppr_path);
-          sleep_cleanup_complete = terminate_game_for_sleep(
-              kq, suspended_game_pid, suspended_game_title_id,
-              "plaintext-PPR PKG");
-          if (sleep_cleanup_complete)
-            suspended_game_pid = 0;
-        }
-        if (usb_game && !plaintext_ppr_pkg_game && sleep_cleanup_complete) {
+        if (usb_game) {
           sleep_cleanup_complete = terminate_game_for_sleep(
               kq, suspended_game_pid, suspended_game_title_id, "USB-backed");
           if (sleep_cleanup_complete)

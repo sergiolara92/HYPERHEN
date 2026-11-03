@@ -36,6 +36,7 @@ typedef struct remote_file {
   struct smb2fh *file;
   dev_t device;
   int used;
+  bool read_only;
   int flush_state, flush_error;
 } remote_file_t;
 static remote_file_t remote_files[SMB_FD_COUNT];
@@ -82,7 +83,8 @@ static bool directory_matches_address(const sm_vfs_dir_t *dir, const sm_smb_addr
   return dir->ctx && pthread_equal(dir->thread, pthread_self()) &&
          !strcasecmp(saved->server, address->server) &&
          !strcasecmp(saved->share, address->share) && !strcmp(saved->user, address->user) &&
-         !strcmp(saved->domain, address->domain) && !strcmp(saved->password, address->password);
+         !strcmp(saved->domain, address->domain) && !strcmp(saved->password, address->password) &&
+         saved->read_only == address->read_only;
 }
 
 static sm_vfs_dir_t *find_directory_context(const sm_smb_address_t *address) {
@@ -275,7 +277,7 @@ int sm_vfs_statvfs(const char *path, struct statvfs *st) {
     st->f_files = remote.f_files;
     st->f_ffree = remote.f_ffree;
     st->f_favail = remote.f_favail;
-    st->f_flag = remote.f_flag;
+    st->f_flag = remote.f_flag | (a.read_only ? ST_RDONLY : 0);
     st->f_namemax = remote.f_namemax;
   }
   if (ctx) smb2_destroy_context(ctx);
@@ -405,6 +407,9 @@ int sm_vfs_open(const char *path, int flags, ...) {
     sm_smb_unlock();
     return -1;
   }
+  if (a.read_only && ((flags & O_ACCMODE) != O_RDONLY || (flags & (O_CREAT | O_TRUNC | O_APPEND)))) {
+    sm_smb_unlock(); errno = EROFS; return -1;
+  }
   sm_vfs_dir_t *owner = find_directory_context(&a);
   struct smb2_context *ctx = owner ? owner->ctx : sm_smb_connect_path(path, &a);
   struct smb2fh *file = ctx ? smb2_open(ctx, a.relative, flags) : NULL;
@@ -424,6 +429,7 @@ int sm_vfs_open(const char *path, int flags, ...) {
                                         .owner = owner,
                                         .file = file,
                                         .device = remote_device(&a),
+                                        .read_only = a.read_only,
                                         .used = 1};
   if (owner) ++owner->users;
   if (flags & (O_CREAT | O_TRUNC)) clear_directory_stat_cache(remote_files[index].device);
@@ -636,6 +642,9 @@ static ssize_t remote_io(int fd, void *data, size_t size, off_t offset, int writ
   int sequential = offset < 0;
   sm_smb_lock();
   remote_file_t *f = remote_file(fd);
+  if (f && writing && f->read_only) {
+    sm_smb_unlock(); errno = EROFS; return -1;
+  }
   if (f && writing && f->flush_state != SMB_FLUSH_NONE) {
     if (wait_file_flush(f) < 0) f = NULL;
     else f->flush_state = SMB_FLUSH_NONE;
@@ -725,6 +734,7 @@ static int remote_path_operation(const char *path, path_operation_t operation) {
     sm_smb_unlock();
     return -1;
   }
+  if (a.read_only) { sm_smb_unlock(); errno = EROFS; return -1; }
   sm_vfs_dir_t *owner = find_directory_context(&a);
   struct smb2_context *ctx = owner ? owner->ctx : sm_smb_connect_path(path, &a);
   int result = ctx ? sm_smb_result(operation(ctx, a.relative)) : -1;
@@ -754,7 +764,9 @@ int sm_vfs_unlink(const char *path) {
 int sm_vfs_rename(const char *src, const char *dst) {
   if (!sm_smb_path(src) && !sm_smb_path(dst)) return rename(src, dst);
   if (!sm_smb_path(src) || !sm_smb_path(dst)) {
-    errno = EXDEV;
+    sm_smb_address_t address;
+    if (sm_smb_parse_address(sm_smb_path(src) ? src : dst, &address)) return -1;
+    errno = address.read_only ? EROFS : EXDEV;
     return -1;
   }
   int original_errno = errno;
@@ -763,6 +775,7 @@ int sm_vfs_rename(const char *src, const char *dst) {
   if (sm_smb_parse_address(src, &a) || sm_smb_parse_address(dst, &b)) {
     sm_smb_unlock(); return -1;
   }
+  if (a.read_only || b.read_only) { sm_smb_unlock(); errno = EROFS; return -1; }
   if (strcasecmp(a.server, b.server) || strcasecmp(a.share, b.share) ||
       strcmp(a.user, b.user) || strcmp(a.domain, b.domain) || strcmp(a.password, b.password)) {
     sm_smb_unlock(); errno = EXDEV; return -1;
@@ -783,6 +796,11 @@ int sm_vfs_rename(const char *src, const char *dst) {
 }
 int sm_vfs_access(const char *path, int mode) {
   if (!sm_smb_path(path)) return access(path, mode);
+  if (mode & W_OK) {
+    sm_smb_address_t address;
+    if (sm_smb_parse_address(path, &address)) return -1;
+    if (address.read_only) { errno = EROFS; return -1; }
+  }
   struct stat st;
   return sm_vfs_stat(path, &st);
 }
@@ -862,6 +880,7 @@ int sm_vfs_delete_access(const char *path, bool directory) {
   sm_smb_lock();
   sm_smb_address_t address;
   if (sm_smb_parse_address(path, &address)) { sm_smb_unlock(); return -1; }
+  if (address.read_only) { sm_smb_unlock(); errno = EROFS; return -1; }
   sm_vfs_dir_t *owner = find_directory_context(&address);
   struct smb2_context *ctx = owner ? owner->ctx : sm_smb_connect_path(path, &address);
   if (!ctx) { sm_smb_unlock(); return -1; }
@@ -886,6 +905,7 @@ int sm_vfs_mkdir_access(const char *path) {
   sm_smb_lock();
   sm_smb_address_t address;
   if (sm_smb_parse_address(path, &address)) { sm_smb_unlock(); return -1; }
+  if (address.read_only) { sm_smb_unlock(); errno = EROFS; return -1; }
   sm_vfs_dir_t *owner = find_directory_context(&address);
   struct smb2_context *ctx = owner ? owner->ctx : sm_smb_connect_path(path, &address);
   int result = ctx ? probe_remote_access(&ctx, owner, address.relative, SMB2_FILE_ADD_SUBDIRECTORY, true) : -1;

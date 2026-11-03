@@ -3,6 +3,7 @@
 
 #include "sm_config_mount.h"
 #include "sm_filesystem.h"
+#include "sm_game_lifecycle.h"
 #include "sm_image.h"
 #include "sm_path_utils.h"
 #include "sm_paths.h"
@@ -60,6 +61,13 @@ bool sm_scan_tree_walk(const char *scan_root, const char *dir_path,
     return true;
   }
 
+  // Pace directory/metadata I/O while a game is running. This is work-bound:
+  // idle scanner waits and its deadlines do not acquire a polling timer.
+  if (sm_game_lifecycle_has_active_game())
+    usleep(10000);
+  if (should_stop_requested() || runtime_sleep_mode_active())
+    return true;
+
   sm_scan_tree_dir_visit_t dir_visit = SM_SCAN_TREE_DIR_DESCEND;
   if (callbacks->on_directory) {
     dir_visit = callbacks->on_directory(dir_path, depth_from_root, ctx);
@@ -86,7 +94,12 @@ bool sm_scan_tree_walk(const char *scan_root, const char *dir_path,
        scan_root_is_pfsc_mount_base);
 
   int read_error = 0;
+  unsigned int entries = 0;
   for (;;) {
+    if (should_stop_requested() || runtime_sleep_mode_active()) {
+      closedir(d);
+      return true;
+    }
     errno = 0;
     struct dirent *entry = readdir(d);
     if (!entry) {
@@ -96,6 +109,13 @@ bool sm_scan_tree_walk(const char *scan_root, const char *dir_path,
     if (should_stop_requested() || runtime_sleep_mode_active()) {
       closedir(d);
       return true;
+    }
+    if (++entries % 32u == 0u && sm_game_lifecycle_has_active_game()) {
+      usleep(2000);
+      if (should_stop_requested() || runtime_sleep_mode_active()) {
+        closedir(d);
+        return true;
+      }
     }
     if (entry->d_name[0] == '.')
       continue;

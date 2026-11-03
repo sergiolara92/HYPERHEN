@@ -17,6 +17,7 @@
 #include "dynamic_ui_runtime.hpp"
 #include "external_plugin_ui.hpp"
 #include "external_sprx_ui.hpp"
+#include "plugin_sprx_pages.hpp"
 #include "onion_cjson.hpp"
 
 #include <dirent.h>
@@ -436,6 +437,7 @@ static bool plugins_model(ps5ui::Node &model) {
   using namespace onion::plugins;
 
   ps5ui::Page page("id_plugins", toolbox_i18n::tr("plugins.title"));
+  onion::shellui::plugin_pages::append_sprx_page_link(page);
 
   /* The same model supplies initial XML and updates to existing elements. */
   for (const auto &d : kRegistry) {

@@ -1,0 +1,58 @@
+{
+  "result": "PASS",
+  "native_callback_sha256": "a18fd4d8839bf8d67ff965e9e266a9aa1d730f59d9499d75d73ee36296b60bae",
+  "native_callback_bytes": 1994,
+  "checks": [
+    {
+      "case": "actual_native_callback_blob",
+      "mode": "release",
+      "result": "PASS: actual callback blob, separate real worker, blocked/reentrant input, path validation, activation and original-first thunk"
+    },
+    {
+      "case": "publication",
+      "mode": "release",
+      "result": "Stopped-thread publication, collisions, partial-write rollback and uncertain outcomes passed"
+    },
+    {
+      "case": "imports",
+      "mode": "release",
+      "result": "Bounded game import lookup, symbol identity and malformed metadata checks passed"
+    },
+    {
+      "case": "production_receipt_coordinator",
+      "mode": "release",
+      "result": "PASS: real R50 receipt coordinator; alias failure/success/retry; pending/late completion; no duplicate failed initialization; pre-dispatch retry; failed detach; legacy-generation guard; new game; eight slots"
+    },
+    {
+      "case": "actual_native_callback_blob",
+      "mode": "sanitized",
+      "result": "PASS: actual callback blob, separate real worker, blocked/reentrant input, path validation, activation and original-first thunk"
+    },
+    {
+      "case": "publication",
+      "mode": "sanitized",
+      "result": "Stopped-thread publication, collisions, partial-write rollback and uncertain outcomes passed"
+    },
+    {
+      "case": "imports",
+      "mode": "sanitized",
+      "result": "Bounded game import lookup, symbol identity and malformed metadata checks passed"
+    },
+    {
+      "case": "production_receipt_coordinator",
+      "mode": "sanitized",
+      "result": "PASS: real R50 receipt coordinator; alias failure/success/retry; pending/late completion; no duplicate failed initialization; pre-dispatch retry; failed detach; legacy-generation guard; new game; eight slots"
+    },
+    {
+      "case": "image_bounds_and_sdk_adaptation",
+      "mode": "release",
+      "result": "PASS: ELF bounds/relocations, PRX SDK adaptation copies and app-info layouts"
+    },
+    {
+      "case": "image_bounds_and_sdk_adaptation",
+      "mode": "sanitized",
+      "result": "PASS: ELF bounds/relocations, PRX SDK adaptation copies and app-info layouts"
+    }
+  ],
+  "hardware": "PENDING; these are actual x86-64 callback and host publication tests, not PS5 execution"
+}

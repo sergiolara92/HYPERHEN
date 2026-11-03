@@ -1,6 +1,7 @@
 {
-  "version": "0.9.4",
-  "worker_revision": "R45",
+  "version": "0.9.5",
+  "worker_revision": "R52",
+  "runtime_revision": "R42",
   "commands": [
     [
       "@SDK@/bin/prospero-clang++",
@@ -290,7 +291,7 @@
     "CMakeFiles/hyper_assistant.dir/hyper_reply_tts.cpp.o",
     "CMakeFiles/hyper_assistant.dir/extra-hyper_weight_stream.o",
     "-o",
-    "@BUILD@/Hyper-Assistant-R45.elf",
+    "@BUILD@/Hyper-Assistant-R52.elf",
     "@ROOT@/release-inputs/hyper-ai/lib/libwhisper.a",
     "@ROOT@/release-inputs/hyper-ai/lib/libllama.a",
     "@ROOT@/release-inputs/hyper-ai/lib/libespeak-ng.a",
@@ -304,7 +305,7 @@
     "-nostartfiles",
     "@ROOT@/release-inputs/sdk/crt1-r42-1360.o"
   ],
-  "expected_retained_sha256": "c954b1960829e5b02096f6ad087bf44e144f541e8b2a22462d2bed60c22ec230",
+  "expected_retained_sha256": "a56ee4d551cd9041180af9d194384af9bbc3bb321c6a3f5e41b0115e0dd1ac57",
   "libraries_sha256": {
     "libwhisper.a": "04cc6fd62d5d4aa1f04da56cb55977f4f9c93d5b6d455cbec3fbc22d0e290906",
     "libllama.a": "7f2c3de48d25f974c718584e07ffbecae9528c216c075d117b4e5967aa842634",

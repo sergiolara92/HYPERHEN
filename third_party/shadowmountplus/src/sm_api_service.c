@@ -41,6 +41,7 @@
 #include "sm_title_state.h"
 #include "sm_smb.h"
 #include "sm_vfs.h"
+#include "sm_usb.h"
 
 #ifndef SHADOWMOUNT_VERSION
 #define SHADOWMOUNT_VERSION "unknown"
@@ -100,6 +101,7 @@ typedef enum {
   GAME_STORAGE_DELETE,
   GAME_STORAGE_UNPACK,
   GAME_STORAGE_INSTALL,
+  GAME_STORAGE_EJECT,
 } game_storage_operation_t;
 
 typedef enum {
@@ -116,6 +118,11 @@ typedef enum {
 } storage_job_state_t;
 
 typedef struct {
+  char source[MAX_PATH];
+  char target[MAX_PATH];
+} usb_eject_blocker_t;
+
+typedef struct {
   pthread_mutex_t mutex;
   pthread_cond_t cond;
   bool accepting;
@@ -128,6 +135,7 @@ typedef struct {
   char source_type[16];
   char source[MAX_PATH];
   char runtime_source[MAX_PATH];
+  uint64_t usb_mount_id;
   char destination[MAX_PATH];
   bool delete_source;
   uint64_t total_bytes;
@@ -141,6 +149,7 @@ typedef struct {
   size_t affected_titles;
   int result_status;
   char result_error_reason[32];
+  usb_eject_blocker_t usb_blocker;
   bool scan_queued;
   char title_name[MAX_TITLE_NAME];
   int32_t native_status;
@@ -178,6 +187,7 @@ typedef struct {
   size_t affected_titles;
   int result_status;
   char result_error_reason[32];
+  usb_eject_blocker_t usb_blocker;
   bool scan_queued;
   char title_name[MAX_TITLE_NAME];
   int32_t native_status;
@@ -204,6 +214,7 @@ static bool storage_job_is_active(storage_job_state_t state) {
          state == STORAGE_JOB_TRANSFERRING ||
          state == STORAGE_JOB_DELETING || state == STORAGE_JOB_FINALIZING || state == STORAGE_JOB_INSTALLING;
 }
+static void handle_storage_eject(struct MHD_Connection *connection, struct json_object *request);
 static void handle_file_listing(struct MHD_Connection *connection, struct json_object *request, bool packages);
 static void handle_backport_operation(struct MHD_Connection *connection, struct json_object *request,
                                       game_storage_operation_t operation);
@@ -683,6 +694,7 @@ static void handle_version(struct MHD_Connection *fd) {
       !add_json_string(response, "shadowmount_version", SHADOWMOUNT_VERSION) ||
       !append_json_string(capabilities, "web_ui") ||
       !append_json_string(capabilities, "storage_space") ||
+      !append_json_string(capabilities, "storage_eject") ||
       !append_json_string(capabilities, "list_images") ||
       !append_json_string(capabilities, "list_games") ||
       !append_json_string(capabilities, "installed_pkg_games") ||
@@ -771,6 +783,11 @@ static bool add_filesystem_capacity(struct json_object *item,
 }
 
 static struct json_object *filesystem_to_json(const struct statfs *mount) {
+  bool ejectable = sm_usb_mount_path(mount->f_mntonname);
+  char mount_id[17];
+  if (ejectable)
+    snprintf(mount_id, sizeof(mount_id), "%016llx",
+               (unsigned long long)sm_usb_filesystem_id(mount));
   struct json_object *item = json_object_new_object();
   if (!item)
     return NULL;
@@ -781,7 +798,9 @@ static struct json_object *filesystem_to_json(const struct statfs *mount) {
                               (uint64_t)mount->f_blocks,
                               mount->f_bfree > 0 ? (uint64_t)mount->f_bfree : 0,
                               mount->f_bavail > 0 ? (uint64_t)mount->f_bavail : 0) ||
-      !add_json_bool(item, "read_only", (mount->f_flags & MNT_RDONLY) != 0)) {
+      !add_json_bool(item, "read_only", (mount->f_flags & MNT_RDONLY) != 0) ||
+      !add_json_bool(item, "ejectable", ejectable) ||
+      (ejectable && !add_json_string(item, "mount_id", mount_id))) {
     json_object_put(item);
     return NULL;
   }
@@ -819,6 +838,7 @@ static bool append_smb_paths(struct json_object *items, bool destinations) {
     if(!item || !add_json_string(item,"path",path) || !add_json_string(item,"filesystem","smb") ||
         !add_json_string(item,"source",connections[i].path) ||
         !add_json_string(item,"name",connections[i].name) || !add_json_bool(item,"remote",true) ||
+        !add_json_bool(item,"read_only",connections[i].read_only) ||
         json_object_array_add(items,item)) {
       if (item) json_object_put(item);
       ok = false;
@@ -1026,6 +1046,7 @@ typedef struct {
   const char *source_type;
   const char *image_type;
   bool image_backed;
+  uint64_t usb_mount_id;
 } game_source_info_t;
 
 static int resolve_browser_delete_source(const char *path, game_source_info_t *source);
@@ -2063,6 +2084,7 @@ static int operation_http_status(int status) {
   case EROFS:
     return 403;
   case EBUSY:
+  case ESTALE:
   case EEXIST:
   case EALREADY:
   case ECANCELED:
@@ -2109,8 +2131,13 @@ static void handle_mount_operation(struct MHD_Connection *fd,
   }
 
   const bool *mount_mode = mode_present ? &mount_read_only : NULL;
+  if (!sm_scanner_try_begin_external_mutation()) {
+    send_error_response(fd, 409, EBUSY, "scanner or storage operation is busy");
+    return;
+  }
   int status = mount ? sm_shellcore_mount_title_runtime(title_id, mount_mode)
                      : sm_shellcore_unmount_title_runtime(title_id);
+  sm_scanner_end_external_mutation();
   log_debug("  [API] HTTP %s game: title=%s mode=%s status=%d",
             mount ? "mount" : "unmount", title_id,
             !mount ? "n/a" : mode_present
@@ -2158,6 +2185,13 @@ static const char *operation_error_message(int status, const char *reason) {
       {"unpack_mounted", "image runtime is already mounted or prepared; unmount it before unpacking"},
       {"storage_busy", "a storage operation is already running; wait for it to finish"},
       {"storage_unavailable", "storage service is stopping or unavailable"},
+      {"usb_disk_busy", "the drive has other mounted partitions, game links or attached images; unmount them first"},
+      {"usb_mount_busy", "a dependent mount uses this drive; unmount its game or application and retry"},
+      {"usb_partition_busy", "another partition of this drive is mounted; unmount that partition and retry"},
+      {"usb_image_busy", "an attached image uses this drive; unmount its game and retry"},
+      {"usb_mount_changed", "the drive changed or was disconnected; refresh storage before trying again"},
+      {"usb_eject_unconfirmed", "unmount completion was not confirmed; keep the drive connected and refresh storage"},
+      {"usb_eject_failed", "the system could not safely unmount this drive"},
       {"pkg_invalid", "invalid or unsupported PKG"},
       {"pkg_base_missing", "install the base game before this patch or DLC"},
       {"pkg_stream_lost", "the browser streaming source stopped responding"},
@@ -2440,6 +2474,10 @@ static void handle_smb(struct MHD_Connection *connection, struct json_object *re
         if(!json_object_is_type(value,json_type_boolean)) status=EINVAL;
         else c.active=json_object_get_boolean(value);
       }
+      if(!status && json_object_object_get_ex(request,"read_only",&value)) {
+        if(!json_object_is_type(value,json_type_boolean)) status=EINVAL;
+        else c.read_only=json_object_get_boolean(value);
+      }
       if(!status) status=sm_smb_validate(&c);
     }
     if(!status && !strcmp(action,"check")) status=sm_smb_check(&c,&dialect);
@@ -2465,6 +2503,7 @@ static void handle_smb(struct MHD_Connection *connection, struct json_object *re
     if(!item || !add_json_string(item,"name",connections[i].name) ||
         !add_json_string(item,"path",connections[i].path) || !add_json_string(item,"username",connections[i].username) ||
         !add_json_bool(item,"active",connections[i].active) ||
+        !add_json_bool(item,"read_only",connections[i].read_only) ||
         !add_json_bool(item,"password_set",connections[i].password[0] != 0) || json_object_array_add(items,item)) {
       if (item) json_object_put(item);
       goto oom;
@@ -2940,7 +2979,8 @@ static void handle_content_uninstall(struct MHD_Connection *connection,
   if (!status && sm_shellcore_title_is_protected(title_id)) {
     status = EBUSY; error = "game_active";
   }
-  if (!status && (sm_shellcore_service_has_prepared_mount() || is_data_mounted(title_id))) {
+  if (!status && (sm_shellcore_service_title_is_prepared(title_id) ||
+      sm_shellcore_background_work_blocked() || is_data_mounted(title_id))) {
     status = EBUSY; error = "runtime_prepared";
   }
   if (!status && !is_installed(title_id)) status = ENOENT;
@@ -3084,6 +3124,8 @@ static void dispatch_request(struct MHD_Connection *connection,
     handle_version(connection);
   } else if (strcmp(route, SM_API_ROUTE_STORAGE) == 0) {
     handle_storage(connection, json);
+  } else if (strcmp(route, SM_API_ROUTE_STORAGE_EJECT) == 0) {
+    handle_storage_eject(connection, json);
   } else if (strcmp(route, SM_API_ROUTE_IMAGES) == 0) {
     handle_images(connection);
   } else if (strcmp(route, SM_API_ROUTE_GAMES) == 0) {
@@ -3170,6 +3212,8 @@ static const char *game_storage_operation_name(
     return "unpack";
   case GAME_STORAGE_INSTALL:
     return "install";
+  case GAME_STORAGE_EJECT:
+    return "eject";
   }
   return "unknown";
 }
@@ -3203,6 +3247,11 @@ static bool destination_is_managed(const char *destination) {
 
 static int resolve_storage_destination_dir(const char *requested_dir,
                                             char resolved_dir[MAX_PATH]) {
+  if (sm_smb_path(requested_dir)) {
+    sm_smb_address_t address;
+    if (sm_smb_parse_address(requested_dir, &address)) return errno;
+    if (address.read_only) return EROFS;
+  }
   if (!realpath(requested_dir, resolved_dir)) {
     if (errno != ENOENT ||
         strcmp(requested_dir, "/mnt/ext1/homebrew") != 0)
@@ -3489,6 +3538,7 @@ static void copy_storage_job_snapshot_locked(
   snapshot->result_status = g_storage_job.result_status;
   (void)strlcpy(snapshot->result_error_reason, g_storage_job.result_error_reason,
                 sizeof(snapshot->result_error_reason));
+  snapshot->usb_blocker = g_storage_job.usb_blocker;
   snapshot->scan_queued = g_storage_job.scan_queued;
   strlcpy(snapshot->title_name, g_storage_job.title_name, sizeof(snapshot->title_name));
   snapshot->native_status = g_storage_job.native_status;
@@ -3616,6 +3666,8 @@ static bool add_storage_job_fields(struct json_object *response,
                                                        snapshot->result_error_reason)) &&
          add_json_string(response, "result_error_reason",
                          snapshot->result_error_reason) &&
+         add_json_string(response, "blocking_source", snapshot->usb_blocker.source) &&
+         add_json_string(response, "blocking_target", snapshot->usb_blocker.target) &&
          add_json_bool(response, "scan_queued", snapshot->scan_queued);
 }
 
@@ -3787,6 +3839,211 @@ static bool read_install_source_info(const char *path, const struct stat *st,
   return true;
 }
 
+// Compare whole da units, not da1 against da10 or partition text prefixes.
+static size_t usb_disk_source_length(const char *source) {
+  if (strncmp(source, "/dev/da", 7) || !isdigit((unsigned char)source[7]))
+    return 0;
+  size_t size = 8;
+  while (isdigit((unsigned char)source[size]))
+    ++size;
+  return source[size] == '\0' || source[size] == 'p' || source[size] == 's'
+             ? size : 0;
+}
+
+static bool usb_shadowmount_title_mount(const struct statfs *mount) {
+  static const char prefix[] = "/system_ex/app/";
+  const char *target = mount->f_mntonname;
+  size_t prefix_size = sizeof(prefix) - 1;
+  if (strcmp(mount->f_fstypename, "nullfs") ||
+      strncmp(target, prefix, prefix_size) ||
+      !is_supported_game_title_id(target + prefix_size))
+    return false;
+  // Protect layers owned by ShadowMount using its persisted title registry.
+  // AutoMounter/LncService own the application and child sandbox registries;
+  // their USB mappings must reach the native eject request without guessing
+  // ownership from NPXS/CUSA/PPSA names or sandbox directory layouts.
+  char source[MAX_PATH];
+  return read_mount_link(target + prefix_size, source, sizeof(source));
+}
+
+static int check_usb_eject_mount(const char *path, const char *source,
+                                  uint64_t mount_id, bool check_dependencies,
+                                  usb_eject_blocker_t *blocker) {
+  if (blocker)
+    memset(blocker, 0, sizeof(*blocker));
+  if (!check_dependencies)
+    return sm_usb_check_mount(path, source, mount_id);
+  struct statfs *mounts = NULL;
+  int count = sm_mount_table_snapshot(&mounts);
+  if (count < 0)
+    return errno ? errno : EIO;
+  bool found = false;
+  int status = 0;
+  size_t disk_size = usb_disk_source_length(source);
+  for (int i = 0; i < count; ++i) {
+    const struct statfs *mount = &mounts[i];
+    if (!strcmp(mount->f_mntonname, path)) {
+      found = true;
+      if (!sm_usb_mount_matches(mount, path, source, mount_id))
+        status = ESTALE;
+      break;
+    }
+  }
+  if (!found)
+    status = ENOENT;
+  for (int i = 0; i < count && !status; ++i) {
+    const struct statfs *mount = &mounts[i];
+    if (!strcmp(mount->f_mntonname, path))
+      continue;
+    if ((path_matches_root_or_child(mount->f_mntfromname, path) &&
+         usb_shadowmount_title_mount(mount)) ||
+        (disk_size && usb_disk_source_length(mount->f_mntfromname) == disk_size &&
+         !strncmp(mount->f_mntfromname, source, disk_size))) {
+      status = EBUSY;
+      if (blocker) {
+        strlcpy(blocker->source, mount->f_mntfromname, sizeof(blocker->source));
+        strlcpy(blocker->target, mount->f_mntonname, sizeof(blocker->target));
+      }
+    }
+  }
+  free(mounts);
+  if (status)
+    return status;
+  return 0;
+}
+
+static const char *usb_eject_block_reason(const char *path) {
+  const char *reason = runtime_mutation_block_reason();
+  if (reason)
+    return reason;
+  if (sm_shellcore_source_is_protected(path))
+    return "game_active";
+  if (sm_shellcore_background_work_blocked())
+    return "runtime_prepared";
+  char title_id[MAX_TITLE_ID], runtime_path[MAX_PATH];
+  if (!sm_game_lifecycle_background_title(title_id))
+    return "game_active";
+  if (title_id[0] && !read_mount_link(title_id, runtime_path, sizeof(runtime_path))) {
+    // Native PKGs have no mount.lnk. Resolve their installed storage before
+    // allowing an unrelated volume to be ejected; unknown storage fails closed.
+    sm_game_cache_snapshot_entry_t entry;
+    if (!find_installed_pkg_game(title_id, &entry))
+      return "game_active";
+    if (paths_overlap(entry.path, path))
+      return "game_active";
+    // A native patch or DLC can live on a different volume from the base.
+    static const char *const trees[] = {
+        "user/app", "ps5/user/app", "user/patch", "ps5/user/patch",
+        "user/addcont", "ps5/user/addcont"};
+    for (size_t i = 0; i < sizeof(trees) / sizeof(trees[0]); ++i) {
+      char content[MAX_PATH];
+      int length = snprintf(content, sizeof(content), "%s/%s/%s", path,
+                            trees[i], title_id);
+      struct stat st;
+      if (length < 0 || (size_t)length >= sizeof(content) ||
+          stat(content, &st) == 0 || (errno != ENOENT && errno != ENOTDIR))
+        return "game_active";
+    }
+  }
+  return NULL;
+}
+
+static const char *usb_mount_error_reason(int status,
+                                            const usb_eject_blocker_t *blocker) {
+  if (status == EBUSY) {
+    if (!blocker || !blocker->source[0])
+      return "usb_disk_busy";
+    return usb_disk_source_length(blocker->source)
+               ? "usb_partition_busy" : "usb_mount_busy";
+  }
+  if (status == ESTALE || status == ENOENT)
+    return "usb_mount_changed";
+  return NULL;
+}
+
+static void run_usb_eject_job(uint64_t job_id, const char *path,
+                               const char *source, uint64_t mount_id) {
+  void *ctx = (void *)(uintptr_t)job_id;
+  int status = 0;
+  const char *error = NULL;
+  usb_eject_blocker_t blocker = {0};
+  bool scanner = false, shellcore = false, paused = false;
+  if (storage_job_cancelled(ctx))
+    status = ECANCELED;
+  else if (!(scanner = sm_scanner_try_begin_external_mutation())) {
+    status = EBUSY;
+    error = "scanner_busy";
+  } else if (!(shellcore = sm_shellcore_try_begin_external_mutation())) {
+    status = EBUSY;
+    error = "runtime_busy";
+  }
+  if (!status) {
+    error = usb_eject_block_reason(path);
+    if (error)
+      status = EBUSY;
+  }
+  if (!status) {
+    status = check_usb_eject_mount(path, source, mount_id, true, &blocker);
+    error = usb_mount_error_reason(status, &blocker);
+  }
+  if (!status && image_cache_find_active_source_under(path, blocker.source,
+                                                       sizeof(blocker.source))) {
+    status = EBUSY;
+    error = "usb_image_busy";
+  }
+  if (!status && !begin_storage_job_finalizing(ctx))
+    status = ECANCELED;
+  if (!status && !(paused = sm_scanner_suspend_usb_for_eject())) {
+    status = EBUSY;
+    error = "scanner_busy";
+  }
+  if (!status && (should_stop_requested() || runtime_sleep_mode_active())) {
+    status = ECANCELED;
+  }
+  if (!status && (error = usb_eject_block_reason(path)) != NULL)
+    status = EBUSY;
+  if (!status) {
+    // Recheck after the watcher handshake, before resolving a live device ID.
+    status = check_usb_eject_mount(path, source, mount_id, true, &blocker);
+    error = usb_mount_error_reason(status, &blocker);
+  }
+  if (!status) {
+    int32_t native_status = 0;
+    status = sm_usb_request_eject(path, source, mount_id, &native_status);
+    if (status)
+      error = status == ESTALE || status == ENOENT
+                  ? "usb_mount_changed" : "usb_eject_failed";
+    // A successful request can enqueue an extended-storage operation. Only
+    // publish completed after the kernel mount has actually disappeared.
+    for (unsigned i = 0; !status && i < 50; ++i) {
+      int mounted = check_usb_eject_mount(path, source, mount_id, false, NULL);
+      if (mounted == ENOENT)
+        break;
+      if (mounted || i == 49 || sleep_with_stop_check(100000)) {
+        status = mounted ? mounted : ETIMEDOUT;
+        error = "usb_eject_unconfirmed";
+      }
+    }
+  }
+  if (paused)
+    sm_scanner_resume_usb_after_eject();
+  if (shellcore)
+    sm_shellcore_end_external_mutation();
+  if (scanner)
+    sm_scanner_end_external_mutation();
+  log_debug("  [API] USB eject path=%s status=%d reason=%s", path, status,
+            status ? operation_error_message(status, error) : "complete");
+  if (status && blocker.source[0]) {
+    log_debug("  [API] USB eject blocked by source=%s target=%s",
+              blocker.source, blocker.target);
+    pthread_mutex_lock(&g_storage_job.mutex);
+    if (g_storage_job.id == job_id)
+      g_storage_job.usb_blocker = blocker;
+    pthread_mutex_unlock(&g_storage_job.mutex);
+  }
+  finish_storage_job(job_id, status, false, error);
+}
+
 static void *storage_job_thread_main(void *arg) {
   uint64_t job_id = (uint64_t)(uintptr_t)arg;
   char title_id[MAX_TITLE_ID];
@@ -3797,6 +4054,7 @@ static void *storage_job_thread_main(void *arg) {
   bool backport;
   bool browser_delete;
   game_storage_operation_t operation;
+  uint64_t usb_mount_id;
 
   pthread_mutex_lock(&g_storage_job.mutex);
   (void)strlcpy(title_id, g_storage_job.title_id, sizeof(title_id));
@@ -3807,9 +4065,15 @@ static void *storage_job_thread_main(void *arg) {
                 sizeof(destination));
   delete_source = g_storage_job.delete_source;
   operation = g_storage_job.operation;
+  usb_mount_id = g_storage_job.usb_mount_id;
   backport = strcmp(g_storage_job.source_type, "backport") == 0;
   browser_delete = operation == GAME_STORAGE_DELETE && !title_id[0];
   pthread_mutex_unlock(&g_storage_job.mutex);
+
+  if (operation == GAME_STORAGE_EJECT) {
+    run_usb_eject_job(job_id, source, runtime_source, usb_mount_id);
+    return NULL;
+  }
 
   uint64_t total_bytes = 0;
   uint64_t total_files = 0;
@@ -4078,6 +4342,8 @@ static int launch_storage_job(const char *title_id,
   g_storage_job.pkg_speed = g_storage_job.pkg_sample_us = 0;
   g_storage_job.pkg_current_kind = PKG_KIND_UNKNOWN;
   g_storage_job.operation = operation;
+  g_storage_job.usb_mount_id = operation == GAME_STORAGE_EJECT
+                                  ? source_info->usb_mount_id : 0;
   g_storage_job.state = STORAGE_JOB_PREPARING;
   (void)strlcpy(g_storage_job.title_id, title_id,
                 sizeof(g_storage_job.title_id));
@@ -4102,6 +4368,7 @@ static int launch_storage_job(const char *title_id,
   g_storage_job.affected_titles = 0;
   g_storage_job.result_status = 0;
   g_storage_job.result_error_reason[0] = '\0';
+  memset(&g_storage_job.usb_blocker, 0, sizeof(g_storage_job.usb_blocker));
   g_storage_job.scan_queued = false;
   copy_storage_job_snapshot_locked(accepted_out);
   pthread_mutex_unlock(&g_storage_job.mutex);
@@ -4122,6 +4389,40 @@ static int launch_storage_job(const char *title_id,
     return rc;
   }
   return 0;
+}
+
+static void handle_storage_eject(struct MHD_Connection *connection,
+                                  struct json_object *request) {
+  game_source_info_t source = {0};
+  char mount_id[17];
+  if (!smb_request_string(request, "path", source.physical_path,
+                           sizeof(source.physical_path), true) ||
+      !sm_usb_mount_path(source.physical_path) ||
+      !smb_request_string(request, "source", source.runtime_path,
+                           sizeof(source.runtime_path), true) ||
+      !source.runtime_path[0] ||
+      !smb_request_string(request, "mount_id", mount_id, sizeof(mount_id), true) ||
+      strlen(mount_id) != 16 || strspn(mount_id, "0123456789abcdefABCDEF") != 16) {
+    send_error_response(connection, 400, EINVAL, "invalid USB mount");
+    return;
+  }
+  source.usb_mount_id = strtoull(mount_id, NULL, 16);
+  int status = check_usb_eject_mount(source.physical_path, source.runtime_path,
+                                     source.usb_mount_id, false, NULL);
+  if (status) {
+    send_operation_error_response(connection, status, usb_mount_error_reason(status, NULL));
+    return;
+  }
+  source.source_type = "usb";
+  storage_job_snapshot_t accepted;
+  const char *error = NULL;
+  status = launch_storage_job("", &source, "", GAME_STORAGE_EJECT, false,
+                               &accepted, &error);
+  if (status) {
+    send_operation_error_response(connection, status, error);
+    return;
+  }
+  send_storage_job_response(connection, 202, &accepted);
 }
 
 static int start_storage_job(const char *title_id,
@@ -4370,7 +4671,6 @@ static void handle_directory_create(struct MHD_Connection *connection, struct js
     int length = snprintf(child, sizeof(child), "%s/%s", parent, name);
     if (length < 0 || (size_t)length >= sizeof(child)) status = ENAMETOOLONG;
   }
-  if (!status && sm_shellcore_source_is_protected(child)) { status = EBUSY; error = "game_active"; }
   if (!status) {
     pthread_mutex_lock(&g_storage_job.mutex);
     bool busy = !g_storage_job.accepting || storage_job_is_active(g_storage_job.state) || g_storage_job.pkg_queue_running;
@@ -4384,6 +4684,14 @@ static void handle_directory_create(struct MHD_Connection *connection, struct js
   if (!status) {
     shellcore_mutation = sm_shellcore_try_begin_external_mutation();
     if (!shellcore_mutation) { status = EBUSY; error = "runtime_busy"; }
+  }
+  // A launch may have completed between path resolution and taking the gate.
+  if (!status) {
+    error = runtime_mutation_block_reason();
+    if (error) status = EBUSY;
+    else if (sm_shellcore_source_is_protected(child)) {
+      status = EBUSY; error = "game_active";
+    }
   }
   if (!status && !browser_directory_creatable(parent))
     status = should_stop_requested() || runtime_sleep_mode_active() ? ECANCELED : EACCES;
@@ -4438,7 +4746,8 @@ static bool add_package_info(struct json_object *item, const sm_pkg_info_t *info
     add_json_string(item, "content_id", info->content_id) &&
     add_json_string(item, "version", info->app_ver) &&
     add_json_int(item, "sdk_version", info->sdk_version) &&
-    add_json_string(item, "kind", sm_pkg_kind_name(info->pkg_kind));
+    add_json_string(item, "kind", sm_pkg_kind_name(info->pkg_kind)) &&
+    add_json_bool(item, "replaceable", info->pkg_kind == PKG_KIND_BASE && sm_pkg_is_media_remaster(info));
 }
 
 static bool package_base_installed(const char *title_id, bool *pkg_installed_out) {
@@ -4464,7 +4773,7 @@ static bool package_base_queued_locked(const char *title_id) {
 }
 
 static int enqueue_package_locked(const sm_pkg_info_t *info, bool installed) {
-  if (info->pkg_kind == PKG_KIND_BASE && installed) return EALREADY;
+  if (info->pkg_kind == PKG_KIND_BASE && installed && !sm_pkg_is_media_remaster(info)) return EALREADY;
   if (info->pkg_kind != PKG_KIND_BASE && !installed &&
       !package_base_queued_locked(info->title_id)) return ENOENT;
   if (g_storage_job.operation == GAME_STORAGE_INSTALL && storage_job_is_active(g_storage_job.state) &&
@@ -4477,6 +4786,15 @@ static int enqueue_package_locked(const sm_pkg_info_t *info, bool installed) {
   if (g_storage_job.pkg_queue_count == SM_PKG_QUEUE_MAX) return ENOSPC;
   g_storage_job.pkg_queue[g_storage_job.pkg_queue_count++] = *info;
   if (g_storage_job.pkg_queue_running) ++g_storage_job.pkg_queue_total;
+  return 0;
+}
+
+static int clear_package_queue_locked(bool only_if_idle) {
+  if (only_if_idle && (!g_storage_job.accepting || storage_job_is_active(g_storage_job.state) || g_storage_job.pkg_queue_running))
+    return EBUSY;
+  size_t keep = g_storage_job.pkg_queue_running ? 1 : 0;
+  if (g_storage_job.pkg_queue_running) g_storage_job.pkg_queue_total -= g_storage_job.pkg_queue_count - keep;
+  g_storage_job.pkg_queue_count = keep;
   return 0;
 }
 
@@ -4493,10 +4811,14 @@ static bool prepare_next_package_locked(void) {
   g_storage_job.pkg_speed = g_storage_job.pkg_sample_us = 0;
   g_storage_job.native_status = 0;
   g_storage_job.state = STORAGE_JOB_PREPARING;
-  --g_storage_job.pkg_queue_count;
-  memmove(g_storage_job.pkg_queue, g_storage_job.pkg_queue + 1,
-      g_storage_job.pkg_queue_count * sizeof(g_storage_job.pkg_queue[0]));
   return true;
+}
+
+static bool add_package_icon_info(struct json_object *item, const sm_pkg_info_t *info) {
+  char revision[100];
+  snprintf(revision, sizeof(revision), "%llx-%llx-%x-%llx", (unsigned long long)info->source_inode,
+      (unsigned long long)info->source_mtime, info->source_mtime_ns, (unsigned long long)info->source_size);
+  return add_json_bool(item, "has_icon", info->icon_size != 0) && add_json_string(item, "icon_revision", revision);
 }
 
 static bool add_package_state(struct json_object *item, const sm_pkg_info_t *info) {
@@ -4505,12 +4827,9 @@ static bool add_package_state(struct json_object *item, const sm_pkg_info_t *inf
   pthread_mutex_lock(&g_storage_job.mutex);
   bool queued_base = package_base_queued_locked(info->title_id);
   pthread_mutex_unlock(&g_storage_job.mutex);
-  char revision[100];
-  snprintf(revision, sizeof(revision), "%llx-%llx-%x-%llx", (unsigned long long)info->source_inode,
-      (unsigned long long)info->source_mtime, info->source_mtime_ns, (unsigned long long)info->source_size);
   return add_json_bool(item, "installed", info->pkg_kind == PKG_KIND_BASE && pkg_installed) &&
     add_json_bool(item, "base_installed", base) && add_json_bool(item, "base_queued", queued_base) &&
-    add_json_bool(item, "has_icon", info->icon_size != 0) && add_json_string(item, "icon_revision", revision);
+    add_package_icon_info(item, info);
 }
 
 static bool handle_package_icon(struct MHD_Connection *connection) {
@@ -4603,7 +4922,7 @@ static void handle_file_listing(struct MHD_Connection *connection, struct json_o
     if (package_root(root, managed) && stat(root, &st) == 0 && S_ISDIR(st.st_mode)) {
       if (!append_json_string(roots, root)) goto oom;
       struct statfs filesystem;
-      if (packages && statfs(root, &filesystem) == 0 && filesystem_has_capacity(&filesystem)) {
+      if (statfs(root, &filesystem) == 0 && filesystem_has_capacity(&filesystem)) {
         struct json_object *item = filesystem_to_json(&filesystem);
         if (!item || !add_json_string(item, "path", root) || json_object_array_add(root_storage, item) != 0) {
           if (item) json_object_put(item);
@@ -4612,7 +4931,13 @@ static void handle_file_listing(struct MHD_Connection *connection, struct json_o
       }
     }
   }
-  if(!append_smb_paths(roots,false)) goto oom;
+  size_t smb_root_offset = json_object_array_length(root_storage);
+  if(!append_smb_paths(root_storage,true)) goto oom;
+  for (size_t i = smb_root_offset; i < json_object_array_length(root_storage); ++i) {
+    struct json_object *item = json_object_array_get_idx(root_storage, i);
+    const char *root = json_object_get_string(json_object_object_get(item, "path"));
+    if (!append_json_string(roots, root)) goto oom;
+  }
   char resolved[MAX_PATH] = "", parent[MAX_PATH] = "";
   size_t page_limit = 256;
   bool truncated = false;
@@ -4894,7 +5219,27 @@ static void *package_install_thread(void *opaque) {
     const char *error = runtime_mutation_block_reason();
     if (error) status = EBUSY;
     if (!status && package_install_cancelled(&ctx)) status = ECANCELED;
-    if (!status && !scanner && !(scanner = sm_scanner_try_begin_external_mutation())) { status = EBUSY; error = "scanner_busy"; }
+    if (!status && !scanner) {
+      // Each browser file has its own job. Let the preceding file's requested
+      // scan finish before submitting the next native install.
+      uint64_t deadline = 0;
+      while (!(scanner = sm_scanner_try_begin_external_mutation())) {
+        uint64_t now = monotonic_time_us();
+        if (!ctx.stream || (deadline && now >= deadline)) {
+          status = EBUSY;
+          error = "scanner_busy";
+          break;
+        }
+        if (!now) { status = EIO; break; }
+        if (!deadline) deadline = now + SM_API_PKG_START_TIMEOUT_US;
+        status = wait_for_package_poll(&ctx);
+        if (status) break;
+      }
+      if (!status) {
+        error = runtime_mutation_block_reason();
+        if (error) status = EBUSY;
+      }
+    }
     if (!status && !shellcore && !(shellcore = sm_shellcore_try_begin_external_mutation())) { status = EBUSY; error = "runtime_busy"; }
     sm_pkg_info_t info = {0};
     if (!status) {
@@ -4909,7 +5254,12 @@ static void *package_install_thread(void *opaque) {
     if (!status) {
       bool pkg_installed;
       bool base = package_base_installed(info.title_id, &pkg_installed);
-      if (info.pkg_kind == PKG_KIND_BASE && pkg_installed) { status = EEXIST; error = "pkg_already_installed"; }
+      if (info.pkg_kind == PKG_KIND_BASE && pkg_installed) {
+        // Full media remasters install standalone, but ShellCore treats them
+        // as patch tasks when a native base is already present.
+        if (sm_pkg_is_media_remaster(&info)) info.pkg_kind = PKG_KIND_PATCH;
+        else { status = EEXIST; error = "pkg_already_installed"; }
+      }
       else if (info.pkg_kind != PKG_KIND_BASE && !base) status = ENOENT;
     }
     if (!status && sm_shellcore_title_is_protected(info.title_id)) { status = EBUSY; error = "game_active"; }
@@ -5008,9 +5358,19 @@ static void *package_install_thread(void *opaque) {
       if (native_result || native_status.error.code || !strcmp(native_status.status, "error")) { status = EIO; break; }
       if (!native_status.status[0]) { status = EPROTO; break; }
       int installed = 0;
-      if (submission.info.type == SM_PKG_NATIVE_ADDCONT) {
+      if (submission.info.type == SM_PKG_NATIVE_ADDCONT &&
+          (!strcmp(native_status.status, "none") || !strcmp(native_status.status, "completed") ||
+           !strcmp(native_status.status, "playable"))) {
+        phase = "poll_addcont";
         native_result = sceAppInstUtilGetAddcontInstalledStatus(submission.info.content_id, &installed);
+        // A new DLC need not have an installed-content record yet. Keep its
+        // source alive and follow the install task until promotion is confirmed.
+        if (native_result == SM_PKG_NATIVE_CONTENT_NOT_FOUND) {
+          installed = 0;
+          native_result = 0;
+        }
         if (native_result) { status = EIO; break; }
+        phase = "poll";
       }
       if (!strcmp(native_status.status, "none")) {
         // Entitlement-only DLC can have no general download record.
@@ -5058,7 +5418,6 @@ static void *package_install_thread(void *opaque) {
           continue;
         }
       }
-      task_start_deadline_us = 0;
       if (submission.info.type == SM_PKG_NATIVE_PATCH && native_status.total > 0 &&
           native_status.total <= INT64_MAX) {
         if (native_status.downloaded >= native_status.total) patch_completed_total = native_status.total;
@@ -5075,12 +5434,23 @@ static void *package_install_thread(void *opaque) {
           : info.pkg_kind == PKG_KIND_BASE && !ctx.native_progress && ctx.server && sm_pkg_server_complete(ctx.server);
       bool completed = copied && (!strcmp(native_status.status, "completed") ||
           (!strcmp(native_status.status, "playable") && downloaded));
+      // Completion can precede the installed DLC record. Reuse the bounded
+      // visibility window, without limiting a transfer or local copy in progress.
+      if (completed && submission.info.type == SM_PKG_NATIVE_ADDCONT && installed != SM_PKG_ADDCONT_INSTALLED) {
+        phase = "wait_addcont";
+        uint64_t now = monotonic_time_us();
+        if (!now) { status = EIO; break; }
+        if (!task_start_deadline_us) task_start_deadline_us = now + SM_API_PKG_START_TIMEOUT_US;
+        if (now >= task_start_deadline_us) { status = ETIMEDOUT; break; }
+      } else task_start_deadline_us = 0;
       // An installed DLC must not complete its replacement while transferring.
       if (submission.info.type == SM_PKG_NATIVE_ADDCONT) completed = completed && installed == SM_PKG_ADDCONT_INSTALLED;
       if (completed) break;
       status = wait_for_package_poll(&ctx);
     }
-    if (package_install_cancelled(&ctx)) status = ctx.failure ? ctx.failure : ECANCELED;
+    // A confirmed native completion wins over a late stop/source disconnect.
+    // Otherwise CancelInstall could remove the base that just finished.
+    if (status && package_install_cancelled(&ctx)) status = ctx.failure ? ctx.failure : ECANCELED;
     if (status && !error) {
       if (status == EINVAL) error = "pkg_invalid";
       else if (status == ENOENT && info.title_id[0] && info.pkg_kind != PKG_KIND_BASE) error = "pkg_base_missing";
@@ -5134,13 +5504,20 @@ static void *package_install_thread(void *opaque) {
     g_storage_job.pkg_stream = NULL;
     g_storage_job.pkg_server = NULL;
     g_storage_job.pkg_server_port = 0;
-    if (!status && (g_storage_job.cancel_requested || !g_storage_job.accepting ||
-        should_stop_requested() || runtime_sleep_mode_active())) status = ECANCELED;
-    if (!status && g_storage_job.pkg_queue_running) ++g_storage_job.pkg_queue_completed;
+    // Keep the current entry at the head until native completion is confirmed.
+    // Failed/cancelled entries remain available for an explicit restart.
+    if (!status && g_storage_job.pkg_queue_running) {
+      --g_storage_job.pkg_queue_count;
+      memmove(g_storage_job.pkg_queue, g_storage_job.pkg_queue + 1,
+          g_storage_job.pkg_queue_count * sizeof(g_storage_job.pkg_queue[0]));
+      ++g_storage_job.pkg_queue_completed;
+    }
+    if (!status && g_storage_job.pkg_queue_running && g_storage_job.pkg_queue_count &&
+        (g_storage_job.cancel_requested || !g_storage_job.accepting ||
+         should_stop_requested() || runtime_sleep_mode_active())) status = ECANCELED;
     bool next = !status && g_storage_job.pkg_queue_running && prepare_next_package_locked();
     if (!next) {
       g_storage_job.stream_token[0] = 0;
-      if (status && g_storage_job.pkg_queue_running) g_storage_job.pkg_queue_count = 0;
       g_storage_job.pkg_queue_running = false;
     }
     pthread_mutex_unlock(&g_storage_job.mutex);
@@ -5182,7 +5559,7 @@ static void handle_package_install(struct MHD_Connection *connection, struct jso
   if (!streaming && !base && info.pkg_kind != PKG_KIND_BASE) {
     send_operation_error_response(connection, ENOENT, "pkg_base_missing"); return;
   }
-  if (!streaming && pkg_installed && info.pkg_kind == PKG_KIND_BASE) {
+  if (!streaming && pkg_installed && info.pkg_kind == PKG_KIND_BASE && !sm_pkg_is_media_remaster(&info)) {
     send_operation_error_response(connection, EEXIST, "pkg_already_installed"); return;
   }
   pthread_mutex_lock(&g_storage_job.mutex);
@@ -5218,6 +5595,7 @@ static void handle_package_install(struct MHD_Connection *connection, struct jso
   g_storage_job.result_status = g_storage_job.native_status = 0;
   g_storage_job.pkg_speed = g_storage_job.pkg_sample_us = 0;
   g_storage_job.result_error_reason[0] = 0;
+  memset(&g_storage_job.usb_blocker, 0, sizeof(g_storage_job.usb_blocker));
   g_storage_job.scan_queued = false;
   strlcpy(g_storage_job.title_id, info.title_id, sizeof(g_storage_job.title_id));
   strlcpy(g_storage_job.title_name, streaming ? source : info.title_name, sizeof(g_storage_job.title_name));
@@ -5291,6 +5669,10 @@ static void handle_package_install(struct MHD_Connection *connection, struct jso
 static void handle_package_queue(struct MHD_Connection *connection, struct json_object *request) {
   const char *action = package_string(request, "action");
   if (!action) action = "status";
+  bool only_if_idle;
+  if (!get_optional_bool(request, "only_if_idle", false, &only_if_idle)) {
+    send_error_response(connection, 400, EINVAL, "only_if_idle must be a boolean"); return;
+  }
   const char *path = package_string(request, "path");
   sm_pkg_info_t info = {0};
   bool installed = false;
@@ -5333,18 +5715,20 @@ static void handle_package_queue(struct MHD_Connection *connection, struct json_
     reason = status == ENOENT ? "pkg_base_missing" : status == EALREADY ? "pkg_already_installed" :
              status == EEXIST ? "pkg_queued" : status == ENOSPC ? "pkg_queue_full" : "storage_busy";
   } else if (!strcmp(action, "clear")) {
-    if (g_storage_job.pkg_queue_running) g_storage_job.pkg_queue_total -= g_storage_job.pkg_queue_count;
-    g_storage_job.pkg_queue_count = 0;
+    status = clear_package_queue_locked(only_if_idle);
+    if (status) reason = "storage_busy";
   } else if (!strcmp(action, "remove")) {
     size_t index = 0;
     while (index < g_storage_job.pkg_queue_count && (!path || strcmp(path, g_storage_job.pkg_queue[index].path))) ++index;
     if (index == g_storage_job.pkg_queue_count) status = ENOENT;
+    else if (index == 0 && g_storage_job.pkg_queue_running) { status = EBUSY; reason = "storage_busy"; }
     else {
       sm_pkg_info_t removed = g_storage_job.pkg_queue[index];
       bool remove_dependents = removed.pkg_kind == PKG_KIND_BASE && !package_base_installed(removed.title_id, NULL);
       size_t kept = 0, count = g_storage_job.pkg_queue_count;
       for (size_t i = 0; i < count; ++i) {
-        if (i == index || (remove_dependents && !strcmp(g_storage_job.pkg_queue[i].title_id, removed.title_id))) continue;
+        if (i == index || (remove_dependents && !(i == 0 && g_storage_job.pkg_queue_running) &&
+            !strcmp(g_storage_job.pkg_queue[i].title_id, removed.title_id))) continue;
         g_storage_job.pkg_queue[kept++] = g_storage_job.pkg_queue[i];
       }
       g_storage_job.pkg_queue_count = kept;
@@ -5359,6 +5743,8 @@ static void handle_package_queue(struct MHD_Connection *connection, struct json_
   for (size_t i = 0; ready && i < g_storage_job.pkg_queue_count; ++i) {
     struct json_object *item = json_object_new_object();
     ready = item && add_package_info(item, &g_storage_job.pkg_queue[i]) &&
+        add_package_icon_info(item, &g_storage_job.pkg_queue[i]) &&
+        add_json_int(item, "size_bytes", (int64_t)g_storage_job.pkg_queue[i].source_size) &&
         add_json_string(item, "path", g_storage_job.pkg_queue[i].path) && json_object_array_add(entries, item) == 0;
     if (!ready && item) json_object_put(item);
   }

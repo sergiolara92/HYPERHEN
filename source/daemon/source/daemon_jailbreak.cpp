@@ -24,6 +24,7 @@
  */
 
 #include "daemon_ops.hpp"
+#include <onion/credentials_guard.h>
 #include "app_lifecycle_runtime.hpp"
 #include "globalconf.hpp"
 #include "shellui_exec_policy.hpp"
@@ -194,6 +195,11 @@ uint64_t jb_read_authid(pid_t pid) {
  * already resolved into KERNEL_ADDRESS_*.
  */
 bool jb_apply_privileges(pid_t pid, bool escape_sandbox) {
+  HhpSelfCredentialsGuard credentials;
+  if (!credentials.ready()) {
+    LOG_ERROR("[JB] credential operation unavailable pid=%d", static_cast<int>(pid));
+    return false;
+  }
   static const uint8_t kFullCaps[16] = {
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,

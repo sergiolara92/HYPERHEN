@@ -89,10 +89,15 @@ SprxStartupReport SprxPluginManager::start_locked(std::string_view manual_id) {
   }
   SprxLoader loader(runtime_, access_policy_, allowlist);
   std::set<std::string> failed;
+  std::set<std::string> pending;
   for (const SprxManifestEntry *entry : order) {
     SprxPluginResult item;
     item.id = entry->id;
     for (const std::string &dependency : entry->dependencies) {
+      if (pending.contains(dependency)) {
+        item.skipped_dependency = true; item.load.status = LoadStatus::Pending;
+        pending.insert(entry->id); break;
+      }
       if (failed.contains(dependency)) {
         item.skipped_dependency = true;
         failed.insert(entry->id);
@@ -116,8 +121,8 @@ SprxStartupReport SprxPluginManager::start_locked(std::string_view manual_id) {
       request.options.max_attempts = 1;
       request.options.game_version = target.version;
       item.load = loader.load(request);
-      if (!item.load.succeeded())
-        failed.insert(entry->id);
+      if (item.load.status == LoadStatus::Pending) pending.insert(entry->id);
+      else if (!item.load.succeeded()) failed.insert(entry->id);
     }
     report.results.push_back(std::move(item));
   }
@@ -166,11 +171,19 @@ SprxOperationResult SprxPluginManager::set_enabled(std::string_view id,
   const auto report = start_locked(id);
   if (!report.issues.empty()) return {false, report.issues.front().message};
   for (const auto &item : report.results)
-    if (item.id == id)
+    if (item.id == id) {
+      if (item.load.status == LoadStatus::Pending)
+        return {true, "pending-return-to-game"};
       return item.load.succeeded() && !item.skipped_dependency
                  ? SprxOperationResult{true, {}}
                  : SprxOperationResult{false, load_status_name(item.load.status)};
+    }
   return {false, "plugin or its dependencies do not match the running game"};
+}
+
+SprxOperationResult SprxPluginManager::register_entry(const SprxManifestEntry &entry) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return catalog_store_.register_entry(entry);
 }
 
 SprxOperationResult SprxPluginManager::remove(std::string_view id) {

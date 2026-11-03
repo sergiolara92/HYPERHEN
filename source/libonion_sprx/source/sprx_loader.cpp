@@ -97,6 +97,7 @@ LoadResult invalid(LoadStatus status, pid_t pid) noexcept {
 
 const char *load_status_name(LoadStatus status) noexcept {
   switch (status) {
+  case LoadStatus::Pending: return "pending-return-to-game";
   case LoadStatus::Loaded: return "loaded";
   case LoadStatus::AlreadyLoaded: return "already-loaded";
   case LoadStatus::InvalidArgument: return "invalid-argument";

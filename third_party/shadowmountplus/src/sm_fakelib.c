@@ -114,6 +114,23 @@ bool sm_fakelib_game_feature_enabled(void) {
   return runtime_config().backport_fakelib_enabled;
 }
 
+bool sm_fakelib_source_is_in_use(const char *path) {
+  if (!path || !path[0])
+    return false;
+  char source[MAX_PATH] = {0};
+  pthread_mutex_lock(&g_fakelib_mutex);
+  for (size_t i = 0; i < g_fakelib_mount.layer_count; ++i) {
+    const fakelib_layer_t *layer = &g_fakelib_mount.layers[i];
+    if (!layer->source_path[0] || !g_fakelib_mount.mount_path[0] ||
+        strcmp(layer->mount_path, g_fakelib_mount.mount_path) != 0)
+      continue;
+    strlcpy(source, layer->source_path, sizeof(source));
+    break; // The session owns one common/lib overlay.
+  }
+  pthread_mutex_unlock(&g_fakelib_mutex);
+  return source[0] && paths_overlap(path, source);
+}
+
 static bool is_sandbox_usb_root(const char *path) {
   return path && strncmp(path, "/mnt/usb", 8u) == 0 &&
          path[8] >= '0' && path[8] < '0' + (int)SANDBOX_USB_ROOT_COUNT &&

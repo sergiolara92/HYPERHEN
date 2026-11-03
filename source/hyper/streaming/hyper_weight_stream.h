@@ -24,6 +24,11 @@ struct hyper_weight_stream_stats {
     uint64_t tensors_registered, unique_weights, max_weight_bytes;
     uint64_t cache_hits, cache_misses, evictions, nodes_computed;
     uint64_t open_files, error_code;
+    /* Monotonic elapsed time around pread/ordinary CPU callbacks only.
+     * Logical read bytes and provider evictions are not physical disk I/O.
+     * A failed clock sample is ignored; it never changes inference status. */
+    uint64_t read_time_us, compute_time_us, compute_dispatches;
+    uint64_t gathered_rows, gathered_row_bytes;
 };
 enum hyper_weight_stream_error {
     HYPER_STREAM_OK = 0,
@@ -59,8 +64,10 @@ void hyper_weight_stream_get_stats(const struct hyper_weight_stream * stream,
     struct hyper_weight_stream_stats * out);
 
 /* CPU backend hook: ordinary_compute must synchronously finish all CPU workers
- * before returning. Only node operands/view chains are pinned, one node at a
- * time. false handled means the original full-graph path should run unchanged.
+ * before returning. Only current-node operands/view chains are pinned; following
+ * weightless nodes may share that synchronous dispatch without admitting weights.
+ * Standard contiguous 2D embedding lookups gather only requested quantized rows.
+ * false handled means the original full-graph path should run unchanged.
  * All failures occur before computation can dereference weight placeholders. */
 typedef enum ggml_status (*hyper_weight_stream_compute_fn)(void * user,
     struct ggml_cgraph * graph);

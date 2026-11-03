@@ -59,6 +59,8 @@ struct SprxInventoryItem {
   int priority = 0;
   bool matches_current_target = false;
   bool loaded_for_current_target = false;
+  // Older daemons list catalog entries only and omit this optional field.
+  bool registered = true;
 };
 
 class IPC_Client {
@@ -121,15 +123,15 @@ public:
   /** Crit: inject ShellUI toolbox (BREW_ENABLE_TOOLBOX). */
   bool EnableToolbox();
   bool ListPlugins(std::vector<PluginInventoryItem> &plugins);
-  bool StartPlugin(const std::string &plugin_id);
-  bool StopPlugin(const std::string &plugin_id);
+  bool StartPlugin(const std::string &plugin_id, std::string *detail = nullptr);
+  bool StopPlugin(const std::string &plugin_id, std::string *detail = nullptr);
   bool ReloadPlugin(const std::string &plugin_id);
   bool DeletePlugin(const std::string &plugin_id);
   bool SetPluginAutoStart(const std::string &plugin_id, bool enabled);
-  bool ListSprx(std::vector<SprxInventoryItem> &sprx);
-  bool SetSprxEnabled(const std::string &id, bool enabled);
+  bool ListSprx(std::vector<SprxInventoryItem> &sprx, std::string *detail = nullptr);
+  bool SetSprxEnabled(const std::string &id, bool enabled, std::string *detail = nullptr);
   /** Removes the catalog entry; it does not delete or unload the SPRX file. */
-  bool DeleteSprx(const std::string &id);
+  bool DeleteSprx(const std::string &id, std::string *detail = nullptr);
 
   // Kept for call-site readability (matches historical public field).
   // Prefer is_util(); do not reassign after construction.
@@ -147,9 +149,9 @@ private:
   bool require_util(const char *what) const;
   bool require_crit(const char *what) const;
   bool PluginOperation(DaemonCommands command,
-                       const std::string &plugin_id);
+                       const std::string &plugin_id, std::string *detail = nullptr);
   bool SprxOperation(DaemonCommands command, const std::string &id,
-                     bool enabled = false);
+                     bool enabled = false, std::string *detail = nullptr);
 
   /** Unlocked: full-frame send of IPCMessage. */
   int send_frame_unlocked(const IPCMessage &msg);

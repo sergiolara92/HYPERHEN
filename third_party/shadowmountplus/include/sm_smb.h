@@ -9,11 +9,12 @@
 #define SM_SMB_CONNECTIONS_MAX 16u
 typedef struct {
   char name[64], path[MAX_PATH], username[256], password[512];
-  bool active;
+  bool active, read_only;
 } sm_smb_connection_t;
 typedef struct {
   char path[MAX_PATH], server[256], share[256], relative[MAX_PATH];
   char user[256], domain[256], password[512];
+  bool read_only;
 } sm_smb_address_t;
 
 struct smb2_context;

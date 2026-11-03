@@ -37,4 +37,6 @@ int sm_pkg_read_directory_icon(const char *path, unsigned char **data, size_t *s
 uint32_t sm_pkg_read_executable_sdk(const char *path);
 const char *sm_pkg_kind_name(pkg_kind_t kind);
 bool sm_pkg_kind_is_installable(pkg_kind_t kind);
+// A full media-app remaster can install a base or update an existing base.
+bool sm_pkg_is_media_remaster(const sm_pkg_info_t *info);
 #endif

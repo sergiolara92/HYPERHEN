@@ -7,6 +7,7 @@
 #include "sm_game_lifecycle.h"
 #include "sm_limits.h"
 #include "sm_log.h"
+#include "sm_path_utils.h"
 #include "sm_pkg_backport.h"
 #include "sm_scan.h"
 #include "sm_runtime.h"
@@ -76,6 +77,25 @@ _Static_assert(PKG_BACKPORT_MAX_REDIRECTS * MAX_PATH <= UINT32_MAX,
 static pthread_mutex_t g_pkg_backport_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pkg_backport_session_t
     g_pkg_backport_sessions[PKG_BACKPORT_MAX_SESSIONS];
+
+bool sm_pkg_backport_source_is_in_use(const char *path) {
+  if (!path || !path[0])
+    return false;
+  char sources[PKG_BACKPORT_MAX_SESSIONS][MAX_PATH];
+  size_t count = 0;
+  pthread_mutex_lock(&g_pkg_backport_mutex);
+  for (size_t i = 0; i < PKG_BACKPORT_MAX_SESSIONS; ++i) {
+    const pkg_backport_session_t *session = &g_pkg_backport_sessions[i];
+    if (!session->installed || !session->root_source[0])
+      continue;
+    strlcpy(sources[count++], session->root_source, MAX_PATH);
+  }
+  pthread_mutex_unlock(&g_pkg_backport_mutex);
+  for (size_t i = 0; i < count; ++i)
+    if (paths_overlap(path, sources[i]))
+      return true;
+  return false;
+}
 
 static int session_namespace_status(const pkg_backport_session_t *session);
 static bool cleanup_session_locked(pkg_backport_session_t *session,

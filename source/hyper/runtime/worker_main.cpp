@@ -11,7 +11,7 @@
 #include "hyper_locale.hpp"
 #include "hyper_stop.hpp"
 #include "hyper_turn_input.hpp"
-#include "onion/hyper_lifecycle.hpp"
+#include <onion/hyper_lifecycle.hpp>
 
 extern "C" {
 #include "activation_gate.h"
@@ -537,13 +537,19 @@ int run_turn(Server &server, HyperStt &stt, HyperDialogue &dialogue, Turn &turn)
         private_data.transcript = recognized.text;
         hyper_worker_erase(recognized.text);
         if (turn.cancelled()) return -ECANCELED;
-        auto response = dialogue.reply(private_data.transcript, Turn::cancel, &turn);
+        const auto inference_started = now_ms();
+        if (inference_started == UINT64_MAX || turn.deadline < kTurnLimitMs ||
+            inference_started < turn.deadline - kTurnLimitMs) return fail(-EIO);
+        const auto exchange_elapsed = inference_started - (turn.deadline - kTurnLimitMs);
+        auto response = dialogue.reply(private_data.transcript, Turn::cancel, &turn,
+                                       exchange_elapsed);
         hyper_worker_erase(private_data.transcript);
         log("dialogue status=%s mode=%s tokens=%u", hyper_dialogue_status_name(response.status),
             response.mode == HyperDialogueMode::fast ? "fast" : "chat", response.generated_tokens);
         if (response.status != HyperDialogueStatus::ok) {
             hyper_worker_erase(response.text); hyper_worker_erase(response.error);
-            return fail(response.status == HyperDialogueStatus::cancelled ? -ECANCELED : -EIO);
+            return fail(response.status == HyperDialogueStatus::cancelled ? -ECANCELED :
+                        response.status == HyperDialogueStatus::timeout ? -ETIMEDOUT : -EIO);
         }
         PendingReply pending_reply{dialogue};
         private_data.reply = hyper_worker_limit_reply(response.text);
@@ -683,7 +689,7 @@ int assistant_loop() {
 } // namespace
 
 int main(int argc, char **argv) {
-    log("ENTRY revision=45 argc=%d", argc);
+    log("ENTRY revision=52 argc=%d", argc);
     // File-based launches inherit the ELF basename from the private loader.
     // Restore the exact P14 identity before READY or authenticated audio use.
     errno = 0;

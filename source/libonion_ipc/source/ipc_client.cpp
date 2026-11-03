@@ -15,6 +15,7 @@ along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
 #include <onion/ipc_client.hpp>
+#include <onion/plugin_diagnostic.hpp>
 #include <onion/ipc_server.hpp>
 #include <onion/notify_i18n.h>
 
@@ -582,19 +583,21 @@ bool IPC_Client::ListPlugins(std::vector<PluginInventoryItem> &plugins) {
 }
 
 bool IPC_Client::PluginOperation(DaemonCommands command,
-                                 const std::string &plugin_id) {
+                                 const std::string &plugin_id, std::string *detail) {
+  if (detail) detail->clear();
   if (!require_crit("PluginOperation")) return false;
   std::string response;
-  return IPCSendCommand(command, response,
+  const bool ok = IPCSendCommand(command, response,
                         json_kv_string("plugin_id", plugin_id.c_str()));
+  return onion::ipc::plugin_operation_result(ok, response, detail);
 }
 
-bool IPC_Client::StartPlugin(const std::string &plugin_id) {
-  return PluginOperation(BREW_PLUGIN_START, plugin_id);
+bool IPC_Client::StartPlugin(const std::string &plugin_id, std::string *detail) {
+  return PluginOperation(BREW_PLUGIN_START, plugin_id, detail);
 }
 
-bool IPC_Client::StopPlugin(const std::string &plugin_id) {
-  return PluginOperation(BREW_PLUGIN_STOP, plugin_id);
+bool IPC_Client::StopPlugin(const std::string &plugin_id, std::string *detail) {
+  return PluginOperation(BREW_PLUGIN_STOP, plugin_id, detail);
 }
 
 bool IPC_Client::ReloadPlugin(const std::string &plugin_id) {
@@ -615,7 +618,8 @@ bool IPC_Client::SetPluginAutoStart(const std::string &plugin_id, bool enabled) 
                         json_object_str(request));
 }
 
-bool IPC_Client::ListSprx(std::vector<SprxInventoryItem> &sprx) {
+bool IPC_Client::ListSprx(std::vector<SprxInventoryItem> &sprx, std::string *detail) {
+  if (detail) detail->clear();
   if (!require_crit("ListSprx")) return false;
   sprx.clear();
   int offset = 0;
@@ -623,8 +627,10 @@ bool IPC_Client::ListSprx(std::vector<SprxInventoryItem> &sprx) {
     cJSON *request = cJSON_CreateObject();
     cJSON_AddNumberToObject(request, "offset", offset);
     std::string response;
-    if (!IPCSendCommand(BREW_SPRX_LIST, response, json_object_str(request)))
-      return false;
+    if (!IPCSendCommand(BREW_SPRX_LIST, response, json_object_str(request))) {
+      sprx.clear();
+      return onion::ipc::plugin_operation_result(false, response, detail);
+    }
     onion_cjson::Root root(response);
     cJSON *items = root ? onion_cjson::item(root.get(), "sprx") : nullptr;
     if (!cJSON_IsArray(items)) return false;
@@ -633,11 +639,14 @@ bool IPC_Client::ListSprx(std::vector<SprxInventoryItem> &sprx) {
       const char *id = onion_cjson::string_item(item, "id");
       const char *path = onion_cjson::string_item(item, "path");
       if (!id || !path) return false;
+      const cJSON *registered = onion_cjson::item(item, "registered");
+      if (registered && !cJSON_IsBool(registered)) return false;
       sprx.push_back({id, path, onion_cjson::bool_item(item, "enabled"),
                       onion_cjson::bool_item(item, "auto_start"),
                       onion_cjson::int_item(item, "priority", 0),
                       onion_cjson::bool_item(item, "matches_current_target"),
-                      onion_cjson::bool_item(item, "loaded_for_current_target")});
+                      onion_cjson::bool_item(item, "loaded_for_current_target"),
+                      !registered || cJSON_IsTrue(registered)});
     }
     const int next = onion_cjson::int_item(root.get(), "next", -1);
     if (next < 0) return true;
@@ -647,20 +656,22 @@ bool IPC_Client::ListSprx(std::vector<SprxInventoryItem> &sprx) {
 }
 
 bool IPC_Client::SprxOperation(DaemonCommands command, const std::string &id,
-                               bool enabled) {
+                               bool enabled, std::string *detail) {
+  if (detail) detail->clear();
   if (!require_crit("SprxOperation")) return false;
   cJSON *request = cJSON_CreateObject();
   cJSON_AddStringToObject(request, "id", id.c_str());
   if (command == BREW_SPRX_SET_ENABLED)
     cJSON_AddBoolToObject(request, "enabled", enabled);
   std::string response;
-  return IPCSendCommand(command, response, json_object_str(request));
+  const bool ok = IPCSendCommand(command, response, json_object_str(request));
+  return onion::ipc::plugin_operation_result(ok, response, detail);
 }
 
-bool IPC_Client::SetSprxEnabled(const std::string &id, bool enabled) {
-  return SprxOperation(BREW_SPRX_SET_ENABLED, id, enabled);
+bool IPC_Client::SetSprxEnabled(const std::string &id, bool enabled, std::string *detail) {
+  return SprxOperation(BREW_SPRX_SET_ENABLED, id, enabled, detail);
 }
 
-bool IPC_Client::DeleteSprx(const std::string &id) {
-  return SprxOperation(BREW_SPRX_DELETE, id);
+bool IPC_Client::DeleteSprx(const std::string &id, std::string *detail) {
+  return SprxOperation(BREW_SPRX_DELETE, id, false, detail);
 }

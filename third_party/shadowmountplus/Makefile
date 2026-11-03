@@ -1,13 +1,16 @@
 PS5_PAYLOAD_SDK ?= /opt/ps5-payload-sdk
 include $(PS5_PAYLOAD_SDK)/toolchain/prospero.mk
 
-VERSION_TAG := 1.7beta9-hyperhen
+VERSION_TAG := 1.7beta11-hyperhen
 BUILD_TIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 HYPERHEN_LITE ?= 0
 
 # Compiler and dependency flags
 HOMEBREW_ROOT := $(PS5_PAYLOAD_SDK)/target/user/homebrew
-HOMEBREW_CFLAGS := -I$(HOMEBREW_ROOT)/include
+JSON_C_PREFIX := $(CURDIR)/.deps/json-c
+JSON_C_LIB := $(JSON_C_PREFIX)/lib/libjson-c.a
+JSON_C_OBJS := src/sm_api_service.o src/sm_appdb.o src/sm_gameinfo.o src/sm_pkg.o src/sm_smb.o
+HOMEBREW_CFLAGS := -I$(JSON_C_PREFIX)/include -I$(HOMEBREW_ROOT)/include
 MHD_LIB := $(HOMEBREW_ROOT)/lib/libmicrohttpd.a
 PNG_LIB := $(HOMEBREW_ROOT)/lib/libpng16.a
 JPEG_LIB := $(HOMEBREW_ROOT)/lib/libturbojpeg.a
@@ -18,12 +21,13 @@ CFLAGS += $(HOMEBREW_CFLAGS)
 CFLAGS += -DSHADOWMOUNT_VERSION=\"$(VERSION_TAG)\"
 CFLAGS += -DSM_VFS_ENABLED
 CFLAGS += -DSM_HYPERHEN_LITE=$(HYPERHEN_LITE)
+CFLAGS += -I$(JSON_C_PREFIX)/include
 
 # Linker
 LDFLAGS := -flto=thin -Wl,--gc-sections
 
 # Libraries
-LIBS := -lSceNotification -lSceSystemService -lSceUserService -lSceAppInstUtil -lSceNet -lSceSsl -lSceHttp -lsqlite3 $(HOMEBREW_ROOT)/lib/libjson-c.a $(MHD_LIB) $(PNG_LIB) $(JPEG_LIB) $(ZLIB_LIB) $(SMB_LIB) -lpthread -lm
+LIBS := -lSceNotification -lSceSystemService -lSceUserService -lSceAppInstUtil -lSceNet -lSceSsl -lSceHttp -lSceIpmi -lsqlite3 $(JSON_C_LIB) $(MHD_LIB) $(PNG_LIB) $(JPEG_LIB) $(ZLIB_LIB) $(SMB_LIB) -lpthread -lm
 PS5_SCE_STUBS_DIR ?= $(PS5_PAYLOAD_SDK)/src/sce_stubs
 KERNEL_SYS_STUB_SO := src/libkernel_sys_ext.so
 KERNEL_SYS_BASE_STUB := $(wildcard $(PS5_SCE_STUBS_DIR)/libkernel_sys.c)
@@ -43,13 +47,22 @@ L10N_CATALOGS := $(wildcard include/lang/*.inc)
 # Targets
 all: shadowmountplus.elf
 
+.PHONY: json-c
+json-c: $(JSON_C_LIB)
+
+# Validate SDK/options and installed headers; cache hits leave the archive intact.
+$(JSON_C_LIB): FORCE tools/build_ps5_json_c.py patches/json-c-0.19-release-free.patch
+	env -u MAKEFLAGS -u MFLAGS python3 tools/build_ps5_json_c.py --prefix "$(JSON_C_PREFIX)" --sdk "$(PS5_PAYLOAD_SDK)"
+
+$(JSON_C_OBJS): $(JSON_C_LIB)
+
 usb-info.elf: tools/usb_info.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -lSceNotification
 	$(PS5_PAYLOAD_SDK)/bin/prospero-strip --strip-all $@
 
 # Build Daemon
-shadowmountplus.elf: $(OBJS) $(KERNEL_SYS_STUB_SO)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(KERNEL_SYS_STUB_SO) $(LIBS)
+shadowmountplus.elf: $(OBJS) $(KERNEL_SYS_STUB_SO) $(JSON_C_LIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(HYPERHEN_CRT_FLAGS) -o $@ $(OBJS) $(KERNEL_SYS_STUB_SO) $(LIBS) $(HYPERHEN_CRT)
 	$(PS5_PAYLOAD_SDK)/bin/prospero-strip --strip-all $@
 
 $(KERNEL_SYS_STUB_SO): $(KERNEL_SYS_STUB_SRCS)
@@ -88,3 +101,10 @@ src/%.o: src/%.S
 
 clean:
 	rm -f shadowmountplus.elf usb-info.elf api-test.elf kill.elf src/*.o $(KERNEL_SYS_STUB_SO) $(ASSET_SRCS)
+
+# HyperHEN native links must retain the isolated reviewed runtime.
+HYPERHEN_CRT ?=
+ifeq ($(strip $(HYPERHEN_CRT)),)
+$(error HYPERHEN_CRT must point to the reviewed R42 crt1.o)
+endif
+HYPERHEN_CRT_FLAGS := --start-no-unused-arguments -nostartfiles --end-no-unused-arguments

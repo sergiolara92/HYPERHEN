@@ -31,6 +31,7 @@ enum class LoadStatus : uint8_t {
   RetryExhausted,
   CleanupFailed,
   RemoteError,
+  Pending, // Accepted, but not yet confirmed initialized by the game callback.
 };
 
 const char *load_status_name(LoadStatus status) noexcept;

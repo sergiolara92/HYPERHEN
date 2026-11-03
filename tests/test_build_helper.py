@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory(prefix="hyperhen helper test ") as temporary:
                       sdk / "target/include/c++/v1", binaries):
         directory.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(HELPER, project / "scripts/build_release.sh")
-    (project / "VERSION").write_text("0.9.4\n")
+    (project / "VERSION").write_text("0.9.5\n")
     (project / "source/CMakeLists.txt").write_text("# recording fixture\n")
     (sdk / "toolchain/prospero.cmake").write_text("# recording fixture\n")
     for tool in ("prospero-clang", "prospero-clang++", "prospero-as", "prospero-lld"):
@@ -47,7 +47,7 @@ with tempfile.TemporaryDirectory(prefix="hyperhen helper test ") as temporary:
                  "liveshell", "hypercore_940", "hypercore_1270", "hypervisor_1270",
                  "hypervisor_940", "hyperlinux_1360", "ps5-fw-spoof",
                  "np-fake-signin-ps5", "nanodns", "chukei", "zftpd",
-                 "hyper_assistant_r45", "hypercore_13xx_v092"):
+                 "hyper_assistant_r52", "hypercore_13xx_v092", "shellui", "hyperdeck-websrv"):
         (project / "release-components" / (name + ".elf")).write_bytes(name.encode())
     for name in ("game-compressor", "web-file-manager", "cheatrunner", "ps5upload"):
         path = project / "release-inputs/hyperdeck-engines" / (name + ".elf")
@@ -78,7 +78,8 @@ with tempfile.TemporaryDirectory(prefix="hyperhen helper test ") as temporary:
     assert arguments[:6] == ["-S", str(project / "source"), "-B", str(output), "-G", "Ninja"]
     assert "-DCMAKE_TOOLCHAIN_FILE=" + str(sdk / "toolchain/prospero.cmake") in arguments
     assert "-DHYPERHEN_SOURCE_PLUGIN_RUNTIME=ON" in arguments
-    assert "-DHYPERHEN_STABLE_HYPERDECK_ELF=" in arguments
+    assert "-DHYPERHEN_STABLE_HYPERDECK_ELF=" + str(project / "release-components/hyperdeck-websrv.elf") in arguments
+    assert "-DHYPERHEN_STABLE_SHELLUI_ELF=" + str(project / "release-components/shellui.elf") in arguments
     assert "-DHYPERHEN_STABLE_INNER_LOADER_ELF=" + str(project / "release-components/hyperhen_elfldr_inner.elf") in arguments
     assert "-DHYPERHEN_STABLE_PKG_HELPER_ELF=" + str(project / "release-components/hyperdeck-pkg-helper.elf") in arguments
     crt = str(project / "release-inputs/sdk/crt1-r42-1360.o")
@@ -86,7 +87,7 @@ with tempfile.TemporaryDirectory(prefix="hyperhen helper test ") as temporary:
     assert "-DCMAKE_CXX_STANDARD_LIBRARIES=" + crt in arguments
     assert any(a.startswith("-DCMAKE_EXE_LINKER_FLAGS=") and "-nostartfiles" in a for a in arguments)
     assert "-DHYPERHEN_INTEGRATED_HYPER=ON" in arguments
-    assert "-DHYPER_ASSISTANT_ELF=" + str(project / "release-components/hyper_assistant_r45.elf") in arguments
+    assert "-DHYPER_ASSISTANT_ELF=" + str(project / "release-components/hyper_assistant_r52.elf") in arguments
     assert "-DHYPERHEN_CORE_13XX_V092_ELF=" + str(project / "release-components/hypercore_13xx_v092.elf") in arguments
     assert "-DHYPER_VOICES_ZIP=" + str(project / "release-inputs/hyper/hyper-voices.zip") in arguments
     for source in (project / "release-inputs").rglob("*"):

@@ -3,6 +3,7 @@
 
 #include "sm_image_cache.h"
 #include "sm_limits.h"
+#include "sm_path_utils.h"
 
 struct ImageCache {
   uint64_t generation;
@@ -379,6 +380,28 @@ bool get_image_cache_entry(int index, image_cache_entry_t *entry_out) {
   copy_cache_entry(index, entry_out);
   pthread_mutex_unlock(&g_image_cache_mutex);
   return true;
+}
+
+bool image_cache_find_active_source_under(const char *root,
+                                           char *path_out, size_t path_size) {
+  if (path_out && path_size)
+    path_out[0] = '\0';
+  if (!root || !root[0])
+    return false;
+  pthread_mutex_lock(&g_image_cache_mutex);
+  bool found = false;
+  for (size_t i = 0; i < MAX_IMAGE_MOUNTS; ++i) {
+    if (g_image_cache[i].valid &&
+        g_image_cache[i].state != ATTACHED_DEVICE_RELEASED &&
+        path_matches_root_or_child(g_image_cache[i].path, root)) {
+      if (path_out && path_size)
+        strlcpy(path_out, g_image_cache[i].path, path_size);
+      found = true;
+      break;
+    }
+  }
+  pthread_mutex_unlock(&g_image_cache_mutex);
+  return found;
 }
 
 bool find_image_cache_entry(const char *path, image_cache_entry_t *entry_out,

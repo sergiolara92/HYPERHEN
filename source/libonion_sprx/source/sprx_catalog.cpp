@@ -8,6 +8,8 @@
 #include <cctype>
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
+#include <limits.h>
 #include <fcntl.h>
 #include <map>
 #include <set>
@@ -418,6 +420,35 @@ bool SprxCatalog::remove(std::string_view id) noexcept {
   return true;
 }
 
+bool SprxCatalog::register_entry(const SprxManifestEntry &entry) {
+  if (!valid_id(entry.id) || !valid_path(entry.path) || entry.path.size() > 255 ||
+      entry.exact_title_ids.size() != 1 || !valid_title_id(entry.exact_title_ids.front()) ||
+      !entry.title_id_prefixes.empty() || entry.auto_start || !entry.dependencies.empty() ||
+      entry.game_version.empty() || find(entry.id) || entries_.size() >= kMaxEntries)
+    return false;
+  for (const unsigned char c : entry.path) if (c < 0x20 || c == 0x7f) return false;
+  if (entry.game_version.size() != 5 && entry.game_version.size() != 10) return false;
+  for (size_t i = 0; i < entry.game_version.size(); ++i) {
+    const bool dot = i == 2 || (entry.game_version.size() == 10 && i == 6);
+    const char c = entry.game_version[i];
+    if (dot ? c != '.' : (c < '0' || c > '9')) return false;
+  }
+  for (const auto &existing : entries_) if (existing.path == entry.path) return false;
+  // Round-trip through the same strict parser used on disk; this validates
+  // versions, counts and the complete new catalog before changing state.
+  std::string text = serialize();
+  if (!text.empty()) text += '\n';
+  text += "[plugin." + entry.id + "]\npath=" + entry.path +
+          "\nexact_title_ids=" + entry.exact_title_ids.front() +
+          "\ngame_version=" + entry.game_version + "\nenabled=" +
+          (entry.enabled ? "true" : "false") + "\nauto_start=false\npriority=" +
+          std::to_string(entry.priority) + "\n";
+  SprxCatalog candidate;
+  if (!candidate.parse(text)) return false;
+  entries_ = std::move(candidate.entries_);
+  return true;
+}
+
 std::string SprxCatalog::serialize() const {
   std::string result;
   for (const SprxManifestEntry &entry : entries_) {
@@ -618,11 +649,22 @@ bool SprxCatalogStore::loaded() const {
 SprxOperationResult SprxCatalogStore::persist_locked() {
   if (path_.empty())
     return {false, "catalog path is not configured"};
-  const std::string temporary = path_ + ".writing";
-  const int fd = open(temporary.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
+  // A crashed writer may leave its temporary file. Each transaction owns a
+  // unique file; never delete or reuse another writer's staging path.
+  std::string temporary = path_ + ".writing.XXXXXX";
+  if (temporary.size() >= PATH_MAX)
+    return {false, "catalog path exceeds the staging path limit"};
+  const int fd = mkstemp(temporary.data());
   if (fd < 0)
     return {false, std::string("cannot create catalog staging file: ") +
                        std::strerror(errno)};
+  if (fchmod(fd, 0644) != 0) {
+    const int mode_error = errno;
+    (void)close(fd);
+    (void)unlink(temporary.c_str());
+    return {false, std::string("cannot set catalog staging permissions: ") +
+                       std::strerror(mode_error)};
+  }
   const std::string text = catalog_.serialize();
   const bool write_ok = write_all(fd, text);
   const int write_error = write_ok ? 0 : errno;
@@ -664,6 +706,49 @@ SprxOperationResult SprxCatalogStore::set_enabled(std::string_view id,
     return persisted;
   (void)catalog_.set_enabled(id, !enabled);
   return persisted;
+}
+
+SprxOperationResult SprxCatalogStore::register_entry(const SprxManifestEntry &entry) {
+  // All store instances in this daemon serialize registration read/merge/write.
+  static std::mutex registration_mutex;
+  std::lock_guard<std::mutex> transaction(registration_mutex);
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (path_.empty()) return {false, "catalog path is not configured"};
+  struct stat info{};
+  SprxCatalog fresh;
+  if (lstat(path_.c_str(), &info) == 0) {
+    if (!S_ISREG(info.st_mode)) return {false, "catalog must be a regular file"};
+    const int fd = open(path_.c_str(), O_RDONLY | O_NOFOLLOW | O_NONBLOCK);
+    if (fd < 0) return {false, "catalog could not be opened without following links"};
+    struct stat opened{};
+    if (fstat(fd, &opened) != 0 || !S_ISREG(opened.st_mode) || opened.st_size < 0 ||
+        static_cast<uint64_t>(opened.st_size) > kMaxManifestBytes) {
+      (void)close(fd); return {false, "catalog is not a bounded regular file"};
+    }
+    std::string text(static_cast<size_t>(opened.st_size), '\0');
+    size_t offset = 0;
+    while (offset < text.size()) {
+      const auto count = read(fd, text.data() + offset, text.size() - offset);
+      if (count < 0 && errno == EINTR) continue;
+      if (count <= 0) { (void)close(fd); return {false, "catalog could not be read completely"}; }
+      offset += static_cast<size_t>(count);
+    }
+    const bool closed = close(fd) == 0;
+    std::vector<SprxCatalogIssue> issues;
+    if (!closed || !fresh.parse(text, &issues))
+      return {false, issues.empty() ? "catalog could not be read" : issues.front().message};
+  } else if (errno != ENOENT) {
+    return {false, std::string("cannot inspect catalog: ") + std::strerror(errno)};
+  }
+  if (!fresh.register_entry(entry))
+    return {false, "invalid exact game registration or duplicate plugin ID/path"};
+  const SprxCatalog previous = catalog_;
+  const bool was_loaded = loaded_;
+  catalog_ = std::move(fresh);
+  const auto result = persist_locked();
+  if (!result) { catalog_ = previous; loaded_ = was_loaded; return result; }
+  loaded_ = true;
+  return result;
 }
 
 SprxOperationResult SprxCatalogStore::bind_game(std::string_view id, std::string_view title,

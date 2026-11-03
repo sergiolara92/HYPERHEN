@@ -6,6 +6,7 @@ onion_module_prologue(C_STANDARD 11 CXX_STANDARD 20)
 add_library(${PROJECT_NAME} STATIC
   source/proc.cpp
   source/ucred.cpp
+  source/credentials_guard.c
   source/proc_query.cpp
   source/proc_dmap.cpp
 )

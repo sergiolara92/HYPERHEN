@@ -13,6 +13,10 @@ bool sm_scanner_usb_watches_suspended(void);
 // Returns false immediately when scanner-owned work is already active.
 bool sm_scanner_try_begin_external_mutation(void);
 void sm_scanner_end_external_mutation(void);
+// Caller holds the external mutation gate. Scanner closes its USB directory
+// fds itself and acknowledges before ejection; resume also applies on failure.
+bool sm_scanner_suspend_usb_for_eject(void);
+void sm_scanner_resume_usb_after_eject(void);
 // Run the initial full synchronization cycle.
 bool sm_scanner_run_startup_sync(void);
 // Run the steady-state scanner wait/scan loop until shutdown is requested.

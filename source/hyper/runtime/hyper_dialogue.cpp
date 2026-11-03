@@ -3,6 +3,7 @@
 #include "llama.h"
 #include "ggml-cpu.h"
 #include "hyper_weight_stream.h"
+#include "hyper_reply_policy.hpp"
 
 #include <algorithm>
 #include <array>
@@ -126,6 +127,25 @@ struct HyperDialogue::Impl {
     std::string path;
     HyperModelLoadPolicy load_policy;
     std::deque<Turn> history;
+    // Exact token prefix represented by sequence zero in the existing KV buffer.
+    // At most4096 token IDs (16KiB); weights and compute buffers are unchanged.
+    std::vector<llama_token> cached_tokens;
+    bool use_prefix_cache() const noexcept {
+        return load_policy == HyperModelLoadPolicy::bounded_stream;
+    }
+    void truncate_cached_tokens(std::size_t keep) noexcept {
+        volatile llama_token *cursor = cached_tokens.empty() ? nullptr : cached_tokens.data();
+        for (std::size_t i = keep; i < cached_tokens.size(); ++i) cursor[i] = LLAMA_TOKEN_NULL;
+        cached_tokens.resize(keep);
+    }
+    void forget_cached_tokens() noexcept { truncate_cached_tokens(0); }
+    void invalidate_cache() noexcept {
+        forget_cached_tokens();
+        if (context) {
+            if (auto memory = llama_get_memory(context)) llama_memory_clear(memory, true);
+        }
+    }
+
     bool pending_reply = false;
     int language = hyper_current_system_language();
     llama_model *model = nullptr;
@@ -137,6 +157,8 @@ struct HyperDialogue::Impl {
     void *cancel_context = nullptr;
     std::uint64_t started = UINT64_MAX;
     HyperDialogueStatus stopped = HyperDialogueStatus::ok;
+    bool reply_request = false, prompt_complete = false, clock_failed = false;
+    hyper_reply_policy::Budget reply_budget = hyper_reply_policy::bounded_budget();
     Diagnostic diagnostic = nullptr;
     void *diagnostic_context = nullptr;
     int last_progress = -1;
@@ -160,6 +182,7 @@ struct HyperDialogue::Impl {
         cancel_context = opaque;
         started = now_ms();
         stopped = HyperDialogueStatus::ok;
+        reply_request = prompt_complete = clock_failed = false;
         if (weight_stream) hyper_weight_stream_begin_request(weight_stream);
     }
 
@@ -178,6 +201,7 @@ struct HyperDialogue::Impl {
     }
 
     void release_model() noexcept {
+        forget_cached_tokens();
         if (context) {
             llama_set_abort_callback(context, nullptr, nullptr);
             if (auto memory = llama_get_memory(context)) llama_memory_clear(memory, true);
@@ -208,6 +232,16 @@ struct HyperDialogue::Impl {
         phase("llm_cache_live_mib", mib(stats.resident_bytes));
         phase("llm_cache_read_mib", mib(stats.bytes_read));
         phase("llm_cache_evictions", static_cast<int>(std::min<std::uint64_t>(stats.evictions, INT_MAX)));
+        // Coarse elapsed time around provider reads and synchronous CPU calls.
+        // These are not CPU utilization or physical SSD traffic measurements.
+        const auto count = [](std::uint64_t value) {
+            return static_cast<int>(std::min<std::uint64_t>(value, INT_MAX));
+        };
+        phase("llm_cache_read_ms", count(stats.read_time_us / 1000));
+        phase("llm_compute_ms", count(stats.compute_time_us / 1000));
+        phase("llm_compute_dispatches", count(stats.compute_dispatches));
+        phase("llm_embedding_rows", count(stats.gathered_rows));
+        phase("llm_embedding_read_mib", mib(stats.gathered_row_bytes));
         phase("llm_compute_nodes", static_cast<int>(std::min<std::uint64_t>(stats.nodes_computed, INT_MAX)));
         phase("llm_max_weight_mib", mib(stats.max_weight_bytes));
         phase("llm_cache_error", static_cast<int>(stats.error_code));
@@ -225,11 +259,16 @@ struct HyperDialogue::Impl {
             return true;
         }
         const auto now = now_ms();
-        if (now == UINT64_MAX || started == UINT64_MAX || now < started ||
-            now - started >= request_timeout_ms) {
+        if (now == UINT64_MAX || started == UINT64_MAX || now < started) {
+            clock_failed = true;
             stopped = HyperDialogueStatus::timeout;
             return true;
         }
+        const bool bounded_reply = reply_request && load_policy == HyperModelLoadPolicy::bounded_stream;
+        const bool expired = bounded_reply
+            ? hyper_reply_policy::budget_stop(reply_budget, now - started, prompt_complete) != hyper_reply_policy::BudgetStop::none
+            : now - started >= request_timeout_ms;
+        if (expired) { stopped = HyperDialogueStatus::timeout; return true; }
         return false;
     }
 
@@ -343,6 +382,7 @@ struct HyperDialogue::Impl {
             return failure(should_stop() ? stopped : HyperDialogueStatus::context_failed,
                            "Memoria o contesto chat non disponibili.");
         }
+        if (use_prefix_cache()) cached_tokens.reserve(context_tokens);
         if (bounded) {
             // Streaming evaluates one node at a time. Without an attached pool,
             // GGML creates and destroys a disposable pool for every node.
@@ -371,13 +411,17 @@ struct HyperDialogue::Impl {
         std::vector<llama_chat_message> messages;
         messages.reserve(2 + (history.size() - skipped) * 2);
         const auto &locale = hyper_locale_for_system(language);
-        const std::string system_prompt = std::string("You are Hyper, a friendly local assistant living in a PlayStation. ") +
-            "Reply only in " + locale.name + " (" + locale.tag + "). " +
-            "Follow this console language even if the user uses another language. Use the regional spelling and writing system of the locale. " +
-            "Answer the actual question clearly and keep track of earlier turns. Use natural spoken sentences. " +
-            "Usually use two to four sentences, fewer for a simple question. Ask for clarification when needed. " +
-            "Do not invent facts or memories. Admit uncertainty. Use humor only when it fits. " +
-            "Do not claim to run console commands or search online; this build can only converse.";
+        const std::string system_prompt = load_policy == HyperModelLoadPolicy::bounded_stream
+            ? std::string("You are Hyper, a friendly local PlayStation voice assistant. Reply only in ") +
+              locale.name + " (" + locale.tag + "), using its regional spelling. Be concise, natural and accurate. " +
+              "Use the conversation; admit uncertainty. You can chat, but cannot run commands or search online."
+            : std::string("You are Hyper, a friendly local assistant living in a PlayStation. ") +
+              "Reply only in " + locale.name + " (" + locale.tag + "). " +
+              "Follow this console language even if the user uses another language. Use the regional spelling and writing system of the locale. " +
+              "Answer the actual question clearly and keep track of earlier turns. Use natural spoken sentences. " +
+              "Usually use two to four sentences, fewer for a simple question. Ask for clarification when needed. " +
+              "Do not invent facts or memories. Admit uncertainty. Use humor only when it fits. " +
+              "Do not claim to run console commands or search online; this build can only converse.";
         messages.push_back({"system", system_prompt.c_str()});
         for (std::size_t i = skipped; i < history.size(); ++i) {
             messages.push_back({"user", history[i].user.c_str()});
@@ -402,7 +446,18 @@ struct HyperDialogue::Impl {
             if (logits && i + 1 == count && !llama_batch_ext_set_output_logits(batch, index, true)) return -1;
         }
         if (should_stop()) return 2;
-        return llama_process(context, LLAMA_PROCESS_TYPE_DECODE, batch);
+        const int processed = llama_process(context, LLAMA_PROCESS_TYPE_DECODE, batch);
+        if (!processed && use_prefix_cache()) {
+            // Abort/error may leave partially processed ubatches. Only a fully
+            // successful decode extends the token ledger; failure clears KV.
+            if (position != cached_tokens.size() || position > context_tokens ||
+                count > context_tokens - position) {
+                invalidate_cache();
+                return -1;
+            }
+            cached_tokens.insert(cached_tokens.end(), tokens, tokens + count);
+        }
+        return processed;
     }
 
     void remember(const std::string &input, const std::string &output, std::size_t skipped = 0) {
@@ -420,10 +475,13 @@ struct HyperDialogue::Impl {
         }
     }
 
-    HyperDialogueReply run(const std::string &raw, Cancel callback, void *opaque) {
+    HyperDialogueReply run(const std::string &raw, Cancel callback, void *opaque,
+                           std::uint64_t exchange_elapsed_ms) {
         // Legacy users do not confirm delivery. Keep their existing auto-record behavior.
         pending_reply = false;
         begin_request(callback, opaque);
+        reply_request = true;
+        reply_budget = hyper_reply_policy::bounded_budget(exchange_elapsed_ms);
         if (raw.size() > max_input_bytes)
             return failure(HyperDialogueStatus::input_too_long, "Frase troppo lunga per il contesto di prova.");
         bool incomplete = false;
@@ -472,15 +530,30 @@ struct HyperDialogue::Impl {
         erase_string(prompt);
         auto memory = llama_get_memory(context);
         if (!memory) return failure(HyperDialogueStatus::context_failed, "Memoria della conversazione non disponibile.");
-        llama_memory_clear(memory, true);
-        struct ClearMemory {
-            llama_memory_t memory;
-            ~ClearMemory() { llama_memory_clear(memory, true); }
-        } clear{memory};
+        std::size_t reused = 0;
+        if (use_prefix_cache()) {
+            const auto last = llama_memory_seq_pos_max(memory, 0);
+            const auto first = llama_memory_seq_pos_min(memory, 0);
+            const bool coherent = cached_tokens.empty() ? last == -1
+                : first == 0 && last >= 0 && static_cast<std::size_t>(last) + 1 == cached_tokens.size();
+            if (!coherent || cached_tokens.size() > context_tokens) invalidate_cache();
+            const auto common = std::min(cached_tokens.size(), tokens.size());
+            while (reused < common && cached_tokens[reused] == tokens[reused]) ++reused;
+            // Re-evaluate at least the last prompt token to publish fresh logits.
+            if (reused == tokens.size() && reused) --reused;
+            if (!reused || !llama_memory_seq_rm(memory, 0, static_cast<llama_pos>(reused), -1)) {
+                invalidate_cache();
+                reused = 0;
+            } else truncate_cached_tokens(reused);
+        } else llama_memory_clear(memory, true);
+        if (load_policy == HyperModelLoadPolicy::bounded_stream)
+            phase("llm_prompt_reused_tokens", static_cast<int>(reused));
         BatchOwner batch{llama_batch_ext_init(context)};
         if (!batch.value) return failure(HyperDialogueStatus::context_failed, "Batch della conversazione non disponibile.");
+        if (load_policy == HyperModelLoadPolicy::bounded_stream)
+            phase("llm_budget_total_ms", static_cast<int>(reply_budget.total_ms));
         phase("llm_prompt_begin", static_cast<int>(tokens.size()));
-        for (std::size_t position = 0; position < tokens.size(); position += kBatch) {
+        for (std::size_t position = reused; position < tokens.size(); position += kBatch) {
             const auto count = std::min<std::size_t>(kBatch, tokens.size() - position);
             if (fill_batch(batch.value, tokens.data() + position, count, position,
                            position + count == tokens.size()) != 0) {
@@ -489,6 +562,7 @@ struct HyperDialogue::Impl {
             }
             phase("llm_prompt_progress", static_cast<int>(position + count));
         }
+        prompt_complete = true;
         phase("llm_prompt_complete", static_cast<int>(tokens.size()));
         stream_diagnostics();
         auto sampler_params = llama_sampler_chain_default_params();
@@ -506,8 +580,38 @@ struct HyperDialogue::Impl {
         result.text.reserve(512);
         std::size_t position = tokens.size();
         phase("llm_decode_begin", 0);
+        const auto decode_started = now_ms();
+        const bool bounded_reply = load_policy == HyperModelLoadPolicy::bounded_stream;
+        auto interrupted_reply = [&](bool engine_aborted) {
+            bool cancelled_now = false;
+            try { cancelled_now = cancel && cancel(cancel_context); }
+            catch (...) { cancelled_now = true; }
+            hyper_weight_stream_stats stream_stats{};
+            if (weight_stream) hyper_weight_stream_get_stats(weight_stream, &stream_stats);
+            const bool stream_error = stream_stats.error_code != HYPER_STREAM_OK &&
+                stream_stats.error_code != HYPER_STREAM_CANCELLED;
+            hyper_reply_policy::RecoveryState state{
+                stopped == HyperDialogueStatus::timeout, cancelled_now || stopped == HyperDialogueStatus::cancelled,
+                stream_error, !model || !context, clock_failed || (!engine_aborted && stopped == HyperDialogueStatus::ok)};
+            auto prefix = bounded_reply ? hyper_reply_policy::recover_timeout(result.text, state)
+                                        : hyper_reply_policy::Prefix{};
+            // A failed decode can leave partial KV writes. Recovery may speak
+            // an earlier sentence, but never treats that partial state as reusable.
+            invalidate_cache();
+            if (bounded_reply && !prefix.text.empty() && prefix.utf8_valid) {
+                erase_string(result.text);
+                result.text.swap(prefix.text);
+                result.truncated = true;
+                phase("llm_reply_finish_reason", 4);
+                remember(input, result.text, skipped);
+                return result;
+            }
+            return failure(cancelled_now ? HyperDialogueStatus::cancelled : stopped,
+                           "Risposta annullata o scaduta.", result.generated_tokens);
+        };
         for (unsigned index = 0; index < max_output_tokens; ++index) {
-            if (should_stop()) return failure(stopped, "Risposta annullata o scaduta.", result.generated_tokens);
+            if (should_stop()) return bounded_reply ? interrupted_reply(false)
+                : failure(stopped, "Risposta annullata o scaduta.", result.generated_tokens);
             llama_token token = llama_sampler_sample(sampler.value, context, -1);
             if (token == LLAMA_TOKEN_NULL)
                 return failure(HyperDialogueStatus::inference_failed, "Token della risposta non valido.", result.generated_tokens);
@@ -524,10 +628,33 @@ struct HyperDialogue::Impl {
             ++result.generated_tokens;
             if (result.generated_tokens == 1 || result.generated_tokens % 8 == 0)
                 phase("llm_decode_progress", static_cast<int>(result.generated_tokens));
+            if (bounded_reply) {
+                const auto decode_now = now_ms();
+                if (decode_now == UINT64_MAX || decode_started == UINT64_MAX || decode_now < decode_started) {
+                    clock_failed = true;
+                    return failure(HyperDialogueStatus::timeout, "Tempo della risposta non disponibile.", result.generated_tokens);
+                }
+                const auto decision = hyper_reply_policy::evaluate(result.text, decode_now - decode_started);
+                if (!decision.prefix.utf8_valid)
+                    return failure(HyperDialogueStatus::inference_failed, "Risposta UTF-8 non valida.", result.generated_tokens);
+                if (decision.finish()) {
+                    erase_string(result.text);
+                    result.text = decision.prefix.text;
+                    result.truncated = true;
+                    phase("llm_reply_finish_reason", static_cast<int>(decision.reason));
+                    break;
+                }
+                if (decision.byte_limit_reached)
+                    return failure(HyperDialogueStatus::empty_output, "Nessuna frase completa nel limite vocale.", result.generated_tokens);
+            }
             if (index + 1 == max_output_tokens) { result.truncated = true; break; }
-            if (fill_batch(batch.value, &token, 1, position++, true) != 0)
-                return failure(should_stop() ? stopped : HyperDialogueStatus::inference_failed,
+            const int processed = fill_batch(batch.value, &token, 1, position++, true);
+            if (processed != 0) {
+                const bool was_stopped = should_stop();
+                if (bounded_reply && processed == 2 && was_stopped) return interrupted_reply(true);
+                return failure(was_stopped ? stopped : HyperDialogueStatus::inference_failed,
                                "Generazione della risposta non riuscita.", result.generated_tokens);
+            }
         }
         const auto prefix = utf8_prefix(result.text, incomplete);
         if (prefix != result.text.size()) {
@@ -537,7 +664,14 @@ struct HyperDialogue::Impl {
         }
         result.text = trimmed(result.text);
         if (result.text.empty()) return failure(HyperDialogueStatus::empty_output, "Il modello non ha prodotto una risposta.", result.generated_tokens);
-        if (should_stop()) return failure(stopped, "Risposta annullata o scaduta.", result.generated_tokens);
+        if (should_stop()) return bounded_reply ? interrupted_reply(false)
+            : failure(stopped, "Risposta annullata o scaduta.", result.generated_tokens);
+        if (bounded_reply && result.truncated) {
+            auto complete = hyper_reply_policy::complete_prefix(result.text);
+            if (!complete.utf8_valid || complete.text.empty())
+                return failure(HyperDialogueStatus::empty_output, "Nessuna frase completa nel limite vocale.", result.generated_tokens);
+            erase_string(result.text); result.text.swap(complete.text);
+        }
         remember(input, result.text, skipped);
         return result;
     }
@@ -548,13 +682,18 @@ HyperDialogue::HyperDialogue(std::string model_path, HyperModelLoadPolicy policy
 HyperDialogue::~HyperDialogue() = default;
 
 HyperDialogueReply HyperDialogue::reply(const std::string &input, Cancel cancel,
-                                       void *cancel_context) noexcept {
+                                       void *cancel_context, std::uint64_t exchange_elapsed_ms) noexcept {
     struct RequestExit {
         Impl *state;
-        ~RequestExit() { state->end_request(); }
+        bool successful = false;
+        ~RequestExit() {
+            if (!state->use_prefix_cache() || !successful) state->invalidate_cache();
+            state->end_request();
+        }
     } request_exit{impl_.get()};
     try {
-        auto result = impl_->run(input, cancel, cancel_context);
+        auto result = impl_->run(input, cancel, cancel_context, exchange_elapsed_ms);
+        request_exit.successful = result.status == HyperDialogueStatus::ok;
         impl_->phase("llm_reply_result", static_cast<int>(result.status));
         impl_->stream_diagnostics();
         return result;
@@ -574,12 +713,17 @@ HyperDialogueReply HyperDialogue::reply(const std::string &input, Cancel cancel,
 HyperDialogueStatus HyperDialogue::prepare(Cancel cancel, void *cancel_context) noexcept {
     struct PreparationExit {
         Impl *state;
-        ~PreparationExit() { state->end_request(); }
+        bool successful = false;
+        ~PreparationExit() {
+            if (!successful) state->invalidate_cache();
+            state->end_request();
+        }
     } preparation_exit{impl_.get()};
     impl_->begin_request(cancel, cancel_context);
     try {
         if (impl_->should_stop()) return impl_->stopped;
         const auto loaded = impl_->load();
+        preparation_exit.successful = loaded.status == HyperDialogueStatus::ok;
         return loaded.status;
     } catch (const std::bad_alloc &) {
         impl_->release_model();
@@ -597,9 +741,7 @@ void HyperDialogue::set_diagnostic(Diagnostic diagnostic, void *context) noexcep
 
 void HyperDialogue::reset() noexcept {
     impl_->clear_history();
-    if (impl_->context) {
-        if (auto memory = llama_get_memory(impl_->context)) llama_memory_clear(memory, true);
-    }
+    impl_->invalidate_cache();
 }
 
 void HyperDialogue::set_language(int system_id) noexcept {
@@ -612,8 +754,10 @@ void HyperDialogue::set_language(int system_id) noexcept {
 void HyperDialogue::reconcile_last_reply(bool delivered, const std::string &spoken) noexcept {
     if (!impl_->pending_reply) return;
     impl_->pending_reply = false;
+    bool reusable = delivered;
     try {
         if (impl_->history.empty()) {
+            reusable = false;
             impl_->clear_history();
         } else if (!delivered) {
             erase_string(impl_->history.back().user);
@@ -624,6 +768,7 @@ void HyperDialogue::reconcile_last_reply(bool delivered, const std::string &spok
             if (spoken.empty() || spoken.size() > 480 ||
                 utf8_prefix(spoken, incomplete) != spoken.size() || incomplete ||
                 trimmed(spoken).empty()) {
+                reusable = false;
                 impl_->clear_history();
             } else {
                 std::string replacement = spoken;
@@ -632,11 +777,12 @@ void HyperDialogue::reconcile_last_reply(bool delivered, const std::string &spok
             }
         }
     } catch (...) {
+        reusable = false;
         impl_->clear_history();
     }
-    if (impl_->context) {
-        if (auto memory = llama_get_memory(impl_->context)) llama_memory_clear(memory, true);
-    }
+    // A delivered TTS prefix can differ from generated text. The next request
+    // tokenizes canonical history and uses only its exact common KV prefix.
+    if (!impl_->use_prefix_cache() || !reusable) impl_->invalidate_cache();
 }
 bool HyperDialogue::model_loaded() const noexcept { return impl_->model && impl_->context; }
 std::size_t HyperDialogue::history_turns() const noexcept { return impl_->history.size(); }

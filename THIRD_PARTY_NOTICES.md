@@ -113,3 +113,35 @@ licenses. In particular, the catalogue includes Qwen2.5-family models;
 a catalogue entry does not imply a hardware validation
 or a change to the model author's terms. No model weights are embedded in the
 HyperHEN ELF.
+
+
+## Native plugin runtime adapters (0.9.5)
+
+The native plugin helpers under `third_party/tachen-plugin-runtime/` are
+adapted from [TacHen](https://github.com/GronedWaffel/TacHen) by
+**GronedWaffel and contributors**. The initial imported helper snapshot
+records upstream commit `db0556bee04d75816bc3039d479ebbbed6b3c325`.
+Its GNU GPL-3.0-or-later notices and license are retained in
+[`third_party/tachen-plugin-runtime/LICENSE`](third_party/tachen-plugin-runtime/LICENSE)
+and [`NOTICE.md`](third_party/tachen-plugin-runtime/NOTICE.md).
+The separate game callback, bounded metadata/import readers, publication and
+trampoline work is described in
+[`game-runtime/NOTICE.md`](third_party/tachen-plugin-runtime/game-runtime/NOTICE.md).
+
+This work retains attribution to **LightningMods and the etaHEN contributors**
+for [etaHEN](https://github.com/LightningMods/etaHEN), and to
+[etaHEN-Plugins](https://github.com/etaHEN/etaHEN-Plugins) for the container
+layout and runtime references. The supplied
+[etaHEN 11.00–13.60 community port](https://github.com/GronedWaffel/etahen-11.00-13.60)
+by **GronedWaffel**, based on etaHEN, was a reference for the private
+process-read adaptation. The compared upstream libNineS `pt.c` retains
+**John Törnblom's** copyright and GPL-3.0-or-later notice. The credited
+HDE64 files retain **Vyacheslav Patkov's** original copyright
+headers; the adapted relocation and callback files retain their file-level
+notices. These acknowledgements do not replace any upstream file's terms.
+
+The [GoldHEN Plugins SDK](https://github.com/GoldHEN/GoldHEN_Plugins_SDK)
+provides reference module activation conventions and compatibility ABI
+layouts. Credit remains with **SiSTRo, ctn123, OSM, jocover, bucanero,
+OpenOrbis contributors and nik**; the SDK retains its MIT terms. The
+HyperHEN-specific adapters retain their own GPL-3.0-or-later notices.

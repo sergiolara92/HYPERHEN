@@ -44,6 +44,7 @@ struct SprxInventoryEntry {
   int32_t priority = 0;
   bool matches_current_target = false;
   bool loaded_for_current_target = false;
+  bool registered = true;
 };
 
 /**
@@ -75,6 +76,8 @@ public:
   bool set_enabled(std::string_view id, bool enabled) noexcept;
   bool bind_game(std::string_view id, std::string_view title, std::string_view version);
   bool remove(std::string_view id) noexcept;
+  /** Adds one exact-title/version manual entry; never replaces an entry. */
+  bool register_entry(const SprxManifestEntry &entry);
   std::string serialize() const;
 
   bool matches(const SprxManifestEntry &entry,
@@ -110,6 +113,7 @@ public:
   SprxOperationResult set_enabled(std::string_view id, bool enabled);
   SprxOperationResult bind_game(std::string_view id, std::string_view title, std::string_view version);
   SprxOperationResult remove(std::string_view id);
+  SprxOperationResult register_entry(const SprxManifestEntry &entry);
 
   std::string path() const;
   bool loaded() const;

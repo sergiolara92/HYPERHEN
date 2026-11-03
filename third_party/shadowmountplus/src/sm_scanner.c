@@ -99,6 +99,8 @@ typedef struct {
 
 static int g_scanner_wake_pipe[2] = {-1, -1};
 static atomic_bool g_usb_watches_suspended = ATOMIC_VAR_INIT(true);
+enum { USB_EJECT_IDLE, USB_EJECT_REQUESTED, USB_EJECT_PAUSED, USB_EJECT_RESUMING };
+static atomic_int g_usb_eject_pause = ATOMIC_VAR_INIT(USB_EJECT_IDLE);
 static int g_scanner_config_fd = -1;
 static int g_scanner_manual_fd = -1;
 static volatile sig_atomic_t g_scanner_wake_write_fd = -1;
@@ -451,7 +453,8 @@ static bool rebuild_scanner_watch_fd_index_with_count(size_t watch_count) {
   while (needed_capacity < (watch_count * 2u))
     needed_capacity *= 2u;
 
-  if (g_scanner_watch_fd_index_capacity != needed_capacity) {
+  // Retain capacity while roots are removed and registered again.
+  if (g_scanner_watch_fd_index_capacity < needed_capacity) {
     size_t *new_index =
         realloc(g_scanner_watch_fd_index, needed_capacity * sizeof(*new_index));
     if (!new_index) {
@@ -1436,17 +1439,16 @@ static bool run_full_scan_cycle_impl(bool startup_sync, const char *reason,
 static bool run_full_scan_cycle(bool startup_sync, const char *reason,
                                 bool *unstable_found_out) {
   pthread_mutex_lock(&g_scanner_cycle_mutex);
-  bool guard = sm_game_lifecycle_has_active_game();
-  bool claimed = !guard || sm_shellcore_try_begin_external_mutation();
+  bool claimed = sm_shellcore_try_begin_external_mutation();
   bool completed = true;
-  if (!claimed || (guard && sm_shellcore_background_work_blocked())) {
+  if (!claimed || sm_shellcore_background_work_blocked()) {
     if (unstable_found_out)
       *unstable_found_out = true;
   } else {
     completed = run_full_scan_cycle_impl(startup_sync, reason,
                                          unstable_found_out);
   }
-  if (guard && claimed)
+  if (claimed)
     sm_shellcore_end_external_mutation();
   if (!completed && !should_stop_requested() && !runtime_sleep_mode_active()) {
     if (unstable_found_out)
@@ -1509,17 +1511,16 @@ static bool run_targeted_scan_cycle_impl(int scan_root_index,
 static bool run_targeted_scan_cycle(int scan_root_index,
                                     bool *unstable_found_out) {
   pthread_mutex_lock(&g_scanner_cycle_mutex);
-  bool guard = sm_game_lifecycle_has_active_game();
-  bool claimed = !guard || sm_shellcore_try_begin_external_mutation();
+  bool claimed = sm_shellcore_try_begin_external_mutation();
   bool completed = true;
-  if (!claimed || (guard && sm_shellcore_background_work_blocked())) {
+  if (!claimed || sm_shellcore_background_work_blocked()) {
     if (unstable_found_out)
       *unstable_found_out = true;
   } else {
     completed = run_targeted_scan_cycle_impl(scan_root_index,
                                              unstable_found_out);
   }
-  if (guard && claimed)
+  if (claimed)
     sm_shellcore_end_external_mutation();
   if (!completed && !should_stop_requested() && !runtime_sleep_mode_active()) {
     if (unstable_found_out)
@@ -1925,6 +1926,7 @@ static void request_scanner_shutdown(const char *reason) {
 }
 
 bool sm_scanner_init(void) {
+  atomic_store_explicit(&g_usb_eject_pause, USB_EJECT_IDLE, memory_order_release);
   close_scanner_wake_pipe();
   close_scanner_config_file();
   close_scanner_manual_file();
@@ -1987,6 +1989,68 @@ bool sm_scanner_try_begin_external_mutation(void) {
 
 void sm_scanner_end_external_mutation(void) {
   pthread_mutex_unlock(&g_scanner_cycle_mutex);
+}
+
+void sm_scanner_resume_usb_after_eject(void) {
+  atomic_store_explicit(&g_usb_eject_pause, USB_EJECT_RESUMING,
+                        memory_order_release);
+  sm_scanner_wake();
+}
+
+bool sm_scanner_suspend_usb_for_eject(void) {
+  if (should_stop_requested() || runtime_sleep_mode_active())
+    return false;
+  int expected = USB_EJECT_IDLE;
+  if (!atomic_compare_exchange_strong_explicit(&g_usb_eject_pause, &expected,
+          USB_EJECT_REQUESTED, memory_order_acq_rel, memory_order_acquire))
+    return false;
+  sm_scanner_wake();
+  for (unsigned i = 0; i < 200; ++i) {
+    if (should_stop_requested() || runtime_sleep_mode_active())
+      break;
+    if (atomic_load_explicit(&g_usb_eject_pause, memory_order_acquire) ==
+        USB_EJECT_PAUSED)
+      return true;
+    sceKernelUsleep(10000);
+  }
+  sm_scanner_resume_usb_after_eject();
+  return false;
+}
+
+static bool handle_usb_eject_pause(int kq) {
+  int pause = atomic_load_explicit(&g_usb_eject_pause, memory_order_acquire);
+  if (pause == USB_EJECT_IDLE)
+    return true;
+  if (pause == USB_EJECT_RESUMING) {
+    atomic_store_explicit(&g_usb_eject_pause, USB_EJECT_IDLE,
+                          memory_order_release);
+    return true; // Request timed out before scanner closed any watches.
+  }
+  if (!suspend_usb_scan_root_watch_trees())
+    return false;
+  atomic_store_explicit(&g_usb_watches_suspended, true, memory_order_release);
+  int expected = USB_EJECT_REQUESTED;
+  (void)atomic_compare_exchange_strong_explicit(&g_usb_eject_pause, &expected,
+      USB_EJECT_PAUSED, memory_order_acq_rel, memory_order_acquire);
+  while (atomic_load_explicit(&g_usb_eject_pause, memory_order_acquire) ==
+             USB_EJECT_PAUSED &&
+         !should_stop_requested() && !runtime_sleep_mode_active()) {
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(g_scanner_wake_pipe[0], &readfds);
+    int rc = select(g_scanner_wake_pipe[0] + 1, &readfds, NULL, NULL, NULL);
+    if (rc < 0 && errno != EINTR)
+      return false;
+    if (rc > 0)
+      drain_scanner_wake_pipe();
+  }
+  if (!should_stop_requested() && !runtime_sleep_mode_active()) {
+    if (!resume_usb_scan_root_watch_trees(kq))
+      return false;
+    atomic_store_explicit(&g_usb_watches_suspended, false, memory_order_release);
+  }
+  atomic_store_explicit(&g_usb_eject_pause, USB_EJECT_IDLE, memory_order_release);
+  return true;
 }
 
 bool sm_scanner_run_startup_sync(void) {
@@ -2075,6 +2139,13 @@ void sm_scanner_run_loop(void) {
     if (should_stop_requested()) {
       log_debug("[SHUTDOWN] stop requested");
       break;
+    }
+
+    if (!handle_usb_eject_pause(kq)) {
+      close(kq);
+      clear_scanner_watch_entries();
+      request_scanner_shutdown("USB eject watcher pause failed");
+      return;
     }
 
     if (runtime_sleep_mode_active()) {
@@ -2437,6 +2508,7 @@ void sm_scanner_run_loop(void) {
 }
 
 void sm_scanner_shutdown(void) {
+  atomic_store_explicit(&g_usb_eject_pause, USB_EJECT_IDLE, memory_order_release);
   clear_scanner_watch_entries();
   close_scanner_config_file();
   close_scanner_manual_file();

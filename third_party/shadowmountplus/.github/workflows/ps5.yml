@@ -57,6 +57,7 @@ jobs:
             meson \
             nasm \
             pacman-package-manager \
+            patch \
             pkg-config \
             python3 \
             python3-yaml \
@@ -85,11 +86,17 @@ jobs:
           makepkg -c -f
           sudo pacman --noconfirm -U ./ps5-payload-*.pkg.tar.gz
 
-      - name: Build PS5 json-c package
-        working-directory: pacbrew-repo/json-c
+      - name: Build patched PS5 json-c
         run: |
-          makepkg -c -f
-          sudo pacman --noconfirm -U ./ps5-payload-*.pkg.tar.gz
+          make json-c
+
+      - name: Check json-c release memory ownership
+        run: |
+          python3 tools/build_ps5_json_c.py --host --sanitize --prefix /tmp/smp-json-release
+          cc -std=gnu11 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer \
+            -I/tmp/smp-json-release/include tools/check_json_c_release.c \
+            /tmp/smp-json-release/lib/libjson-c.a -lm -o /tmp/smp-json-release-test
+          ASAN_OPTIONS=detect_leaks=1 /tmp/smp-json-release-test
 
       - name: Build PS5 zlib package
         working-directory: pacbrew-repo/zlib

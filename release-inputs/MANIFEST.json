@@ -1,8 +1,740 @@
 {
   "product": "HyperHEN",
-  "version": "0.9.4",
-  "base_revision": "R45",
+  "version": "0.9.5",
+  "base_revision": "R71",
   "files": [
+    {
+      "path": "automount-json-c/include/json-c/arraylist.h",
+      "size_bytes": 2840,
+      "sha256": "78b073c2b8880d36afa75e5fd3836ee67f8fd7b56921080245e8434496778cb2",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/debug.h",
+      "size_bytes": 2703,
+      "sha256": "41e878c2f47ad099074dacbb62fd49148decdddae63ddec7922643e32baea1db",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json.h",
+      "size_bytes": 834,
+      "sha256": "05408079f9d62dbec3c4ebc2c05babdc0f70cf130fdbda39c95337805a358f25",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_c_version.h",
+      "size_bytes": 1368,
+      "sha256": "6c9464ee85f78d2392e296b9ae2128cd8b1e95a855282159d2fe5a8462159909",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_config.h",
+      "size_bytes": 183,
+      "sha256": "fefd78485ec4eca046bb436941b0ba32c72c3d5422c0393c2dfea6bc6eaa8cc4",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_inttypes.h",
+      "size_bytes": 696,
+      "sha256": "21b1d1f2e098c19d31c9bc5ae023ae5aaa87ffaa43d01da51c5bee933586ffdf",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_object.h",
+      "size_bytes": 45221,
+      "sha256": "20499c79777b310c8347319b93a07ecc04c92eb117e00b5197f7be02be88e09e",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_object_iterator.h",
+      "size_bytes": 9589,
+      "sha256": "2c6b61d3cf20cdab4ebe0968e660c9cc77fdd8efa83924fb4869fa0cdd7a745e",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_patch.h",
+      "size_bytes": 2455,
+      "sha256": "fb92cc4b674801a4381e5e623b3964e9f9f794f229da4612cafca632e8701176",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_pointer.h",
+      "size_bytes": 8002,
+      "sha256": "ce07ecc738c89ee972008262399861982df1ee76729afed26251268c2a20d0d4",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_tokener.h",
+      "size_bytes": 10646,
+      "sha256": "7d9e119b8f5f90141561e41f1da1b635485f440dc67d2240b902d9c11be42ca6",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_types.h",
+      "size_bytes": 1666,
+      "sha256": "fc4f78e373ca0e6e349d3b2ce0d162088e63704b3db3b50f80766a81bfecf2d1",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_util.h",
+      "size_bytes": 3920,
+      "sha256": "a2da94a510583a7e9bae8892ee239615cc26efcf3c41654cefb4e589e63df351",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/json_visit.h",
+      "size_bytes": 3175,
+      "sha256": "7d647144074951c6807752e11563654ffcfb63bd35d4c341591b3b2b5a68e399",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/linkhash.h",
+      "size_bytes": 12830,
+      "sha256": "13f9730357d6015c5e93da8980952520b190183cf7dcbd4a3280acb5147f83cc",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/include/json-c/printbuf.h",
+      "size_bytes": 4353,
+      "sha256": "ce5fbc9f02e27566700fe9f3c40c852f2abaf58088cda1d75139802c536e8a0f",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/json-c-0.19.tar.gz",
+      "size_bytes": 462232,
+      "sha256": "37ad0249902e301bd9052bf712e511fcc6acff4ecaad4b5900aad9ce564e26de",
+      "executable": false
+    },
+    {
+      "path": "automount-json-c/lib/libjson-c.a",
+      "size_bytes": 151422,
+      "sha256": "acdfdbaf5a43c85399820fdb17bd097bb7cf9e121fca0b144ea0354a6a631c76",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/hyperdeck/CMakeFiles/hyperdeck_websrv.dir/__/common/elfldr_remote.c.o",
+      "size_bytes": 10008,
+      "sha256": "5f39717c99b8be7c467985b8d5162b8310390a1939593875f381bd053582f398",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/hyperdeck/CMakeFiles/hyperdeck_websrv.dir/backend_ps5.cpp.o",
+      "size_bytes": 60888,
+      "sha256": "7e096975cc2e0359a55ca261e4daa32b340f4602a44960419ad6a66c30f6a522",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/hyperdeck/CMakeFiles/hyperdeck_websrv.dir/engine_runtime_ps5.cpp.o",
+      "size_bytes": 9280696,
+      "sha256": "86e0428428c35496aadb0365e14a5cc09e8b512aaf74475dbdeb5f431e06fd3b",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/hyperdeck/CMakeFiles/hyperdeck_websrv.dir/hyperdeck_assets.c.o",
+      "size_bytes": 3205120,
+      "sha256": "c1a4d7a5d63d5d689fe311eff3641de66ed75e68b4d24a4b77f0caad69b1536d",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/hyperdeck/CMakeFiles/hyperdeck_websrv.dir/json.cpp.o",
+      "size_bytes": 3920,
+      "sha256": "12e700ec4706f7f7099e786b2af8880eb485abab6498cd39e61c86d33350cff2",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/hyperdeck/CMakeFiles/hyperdeck_websrv.dir/pkg_catalog.cpp.o",
+      "size_bytes": 52728,
+      "sha256": "225b4afb4803c9a6137c43031e428d1986fdc9b43076639859e9d39d283fc134",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/hyperdeck/CMakeFiles/hyperdeck_websrv.dir/pkg_transport_ps5.cpp.o",
+      "size_bytes": 130728,
+      "sha256": "d1d5ce828a1107262997eaded4a128ecdc039fd6756b378a686c072daec112fd",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/hyperdeck/CMakeFiles/hyperdeck_websrv.dir/server.cpp.o",
+      "size_bytes": 82688,
+      "sha256": "a31da474090466a1ca2c77cca33b2b937f3d745e7980460539e450502c4c4c9d",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/hyperdeck/CMakeFiles/hyperdeck_websrv.dir/workspace/HyperHEN-v0.9.4-R45-20261030/third_party/websrv/src/asset.c.o",
+      "size_bytes": 3080,
+      "sha256": "e245dc410e70224b9bc306ef7ad2f97c902a0bc7fa9f2dcf588f8736798c9199",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/lib/libonion_elfldr.a",
+      "size_bytes": 162738,
+      "sha256": "81cc05813fb196418d9582aad1deec7b9e96f127b772b2ba8b822e8f0a99884c",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/lib/libonion_ipc.a",
+      "size_bytes": 95072,
+      "sha256": "8c522ee090ee6bb9b266f2d32e252a5a3801b854d7e67c4824b35b2f92e8a162",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/lib/libonion_payload.a",
+      "size_bytes": 21044,
+      "sha256": "9cba743882d11590825f184da2c6507b72e4a15046e3e5e9adfddcbcb80c5d7e",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/lib/libonion_platform.a",
+      "size_bytes": 789720,
+      "sha256": "b9048e7aa71ed68ad81ee1deac2dc19a8f6bece1b24e5dbbe7d603ff357a0f25",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/lib/libonion_proc.a",
+      "size_bytes": 25760,
+      "sha256": "d338b1908343dc196b4efce4a7957841f4ad7cac6716592cf95f1d49a65ab8d1",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/lib/libonion_ready.a",
+      "size_bytes": 8972,
+      "sha256": "6405b7e169a876a77ea794b1cf4c2576fa82ab25ee41624a6451e67f5339e642",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/lib/libonion_settings.a",
+      "size_bytes": 136076,
+      "sha256": "ca01ff627d3ee97455e9f128fb42d91b54ee2273b8a37d709b8cf3f0253e25cc",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/objects/vendor/websrv-http/lib/libmicrohttpd.a",
+      "size_bytes": 403354,
+      "sha256": "795d7f66b5b6e2b93cadf777fb85714cce7e690c206c16cf4e5a7e674a0e1bcc",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/parent-build/generated/include/onion/version.h",
+      "size_bytes": 132,
+      "sha256": "74ebdb6d22e6ff833042ba9961cc57ccb7589dd598aa2e9f7081841ae264a8ac",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/parent-build/hyperdeck/hyperdeck_assets.c",
+      "size_bytes": 11425112,
+      "sha256": "b60b533eef7484d129fb25641392958e3ed97c7e75c5a789f8d9916ef5f6ec9e",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/parent-build/shellui/generated/toolbox_i18n_catalog.inc",
+      "size_bytes": 448433,
+      "sha256": "e24f456e8f1ab65247287e5ed8d9b65585155cb1dedd86f74ae715a5968b2973",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/hyperdeck/version-build/generated/include/onion/version.h",
+      "size_bytes": 132,
+      "sha256": "8f159ae4e0202c7f4b2194a76031d2d3194f13486ee7937d2d4928056ca8baee",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/lib/libonion_detour.a",
+      "size_bytes": 62512,
+      "sha256": "5bc5610fa0779913dbf13e94ea81d282a5b12e1fbf2d38007b7c292bf585b8ad",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/lib/libonion_ipc.a",
+      "size_bytes": 98510,
+      "sha256": "d84bf2a1f89a3029fdccdd3f4f12e908816297956033bb659b4128728c6ee0ec",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/lib/libonion_payload.a",
+      "size_bytes": 21044,
+      "sha256": "9cba743882d11590825f184da2c6507b72e4a15046e3e5e9adfddcbcb80c5d7e",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/lib/libonion_platform.a",
+      "size_bytes": 789720,
+      "sha256": "b9048e7aa71ed68ad81ee1deac2dc19a8f6bece1b24e5dbbe7d603ff357a0f25",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/lib/libonion_plugin_bridge.a",
+      "size_bytes": 42706,
+      "sha256": "4629d8717f6cbd622f4f42c24ba27c423946c42fde268f3912c39fc17445663d",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/lib/libonion_plugin_ui.a",
+      "size_bytes": 98626,
+      "sha256": "c42e25646a0f7868993986d3599141fd23132e004decd4dc3eff0b24554af399",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/lib/libonion_proc.a",
+      "size_bytes": 25760,
+      "sha256": "d338b1908343dc196b4efce4a7957841f4ad7cac6716592cf95f1d49a65ab8d1",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/lib/libonion_ready.a",
+      "size_bytes": 8972,
+      "sha256": "6405b7e169a876a77ea794b1cf4c2576fa82ab25ee41624a6451e67f5339e642",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/lib/libonion_settings.a",
+      "size_bytes": 136076,
+      "sha256": "ca01ff627d3ee97455e9f128fb42d91b54ee2273b8a37d709b8cf3f0253e25cc",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/account_activator.cpp.o",
+      "size_bytes": 128264,
+      "sha256": "6908d5b4810da6a7049af75b2fe18c61e4cf52fdbd472f3c49ae1e240044d27d",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/debug_tools.cpp.o",
+      "size_bytes": 64944,
+      "sha256": "2a29b28983b09ac94ca4ff058c10e6b591f20cf8030f64f8a44ddb99a469ac64",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/dynamic_ui_runtime.cpp.o",
+      "size_bytes": 778696,
+      "sha256": "c62743bea9126320d9a946a8e4e14337bd6871f359ab3b3dc71ebe44e1416ed1",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/dynamic_ui_xml.cpp.o",
+      "size_bytes": 429328,
+      "sha256": "f9aa14515dd8bbf665f28cbd428d068f2c2d2cd677c253f4b27957460a011f15",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/external_plugin_ui.cpp.o",
+      "size_bytes": 764464,
+      "sha256": "c54aecd3425b27696686b337ea7ca0c88751eee8bef86e03eee4240ceaa1a9f7",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/external_sprx_ui.cpp.o",
+      "size_bytes": 664952,
+      "sha256": "c45e82472267975fcc2fa813dd06860607f3453caaa9a327435a6d722037173f",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/external_symbols.cpp.o",
+      "size_bytes": 31272,
+      "sha256": "6e37eb6d927637d2c39d63e574c030b2b633f5216a957d655950f291cf2f51d1",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/homeui_top_nav_patch.cpp.o",
+      "size_bytes": 197408,
+      "sha256": "eeea0b29f7bf8db3e8df2eeb5f7a24995d1a8d78797c9e52d0d146b1e7496c50",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_background.cpp.o",
+      "size_bytes": 115312,
+      "sha256": "b2a3d9ed0e42fa47c2aa2a8f2a8f8551acb54b8880eed67e14ca31606f294326",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_boot.cpp.o",
+      "size_bytes": 162208,
+      "sha256": "f1f6f78df93beea3b1fb598413c607648276702070742df731c0c9a298db7bb1",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_capture.cpp.o",
+      "size_bytes": 100688,
+      "sha256": "dd75906a43233d08af25453318c6b78dd53828f06198754984501dc521a17897",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_functions.cpp.o",
+      "size_bytes": 166016,
+      "sha256": "9aef8595428d4d9ca1f9b00b1ed702f3435d8e15d5e84cd3894faa7f80bf0d33",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_launch.cpp.o",
+      "size_bytes": 148176,
+      "sha256": "cfb04cb9f3efad7e4ec0dc8f0917172454cba592d0e60359881215f6d56255b2",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_lifecycle.cpp.o",
+      "size_bytes": 35576,
+      "sha256": "2cfc269599fcc1d945f0e1d105eff14a395d0094f8634ac88a06f8bd95f59ca2",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_manifest.cpp.o",
+      "size_bytes": 331008,
+      "sha256": "33e653761f00ad1cc43b81b3d3968d253d7d327c42722f120a102b600f2ada82",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_navigator.cpp.o",
+      "size_bytes": 151856,
+      "sha256": "55c458a8f82a9fab1413f5970d356ce108d92103cf4881456b14a3c16eb9ed84",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_onprecreate.cpp.o",
+      "size_bytes": 112608,
+      "sha256": "659bc350ea7a928719fa8a51c4d038985847111fad2fdb1993a01736f0a0619c",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_onpress.cpp.o",
+      "size_bytes": 156656,
+      "sha256": "3efc47e0941201d9d6d8fb1e2ad3ec7b2f4cef4a98ec6be029e4adae82dec1df",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_page_stack.cpp.o",
+      "size_bytes": 154808,
+      "sha256": "b65ce9ed9251bd8c6580ae76377d4d719862ac00741a97fd0492ccd4d7e54afb",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hook_usercustom_reset.cpp.o",
+      "size_bytes": 108080,
+      "sha256": "2a41bcc36e53e29ac7774c3403345e80ab01cbf10aa4a113c0a1424e73950897",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hyper_audio_echo.cpp.o",
+      "size_bytes": 46560,
+      "sha256": "f75fdf2adac43461a0db5c1775b73cc454b61b9d8239f6eee6195877007d8e91",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hyper_audio_module.cpp.o",
+      "size_bytes": 15560,
+      "sha256": "8d5967ad42fd7ca7698d391a378ea6bdbf763f1e4388cfd8f0b5a9ed9e00386b",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hyper_locale.cpp.o",
+      "size_bytes": 198080,
+      "sha256": "a332976241acc5692b1625def8dc6e1b4a8b14645384fc5b24144e9f40d5697a",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hyper_mic_monitor.cpp.o",
+      "size_bytes": 26112,
+      "sha256": "d2421047c687b2c4f8b4fdda0325a55f04baf6586253cb03fbf96458c60e4f60",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hyper_output_route_probe.cpp.o",
+      "size_bytes": 51680,
+      "sha256": "aa23a099387ca1da60feae3feade0c7ee52a39c80c6e80426bc396822136140b",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hyper_output_tone.cpp.o",
+      "size_bytes": 61032,
+      "sha256": "1b9afa1cdb32aeaa4b5ec280fe9a96dd307ea1e49ba16264f072c932dad3aba0",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hyper_p5_bridge.cpp.o",
+      "size_bytes": 137912,
+      "sha256": "0ec3858c137df17868730c9c2683fa6cab4a49b592dee234f8ccd9f873ba8833",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hyper_voice_assistant_p14.cpp.o",
+      "size_bytes": 81416,
+      "sha256": "1316f5020d992178d0f5a0057df2a0593b963216fb9c44d8354e4179bb17700d",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hyper_voice_echo_p13.cpp.o",
+      "size_bytes": 75160,
+      "sha256": "e1d19371b1bcfa09ae1fdec1775d41420a9ddef1708558d7ca7d643e43987386",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hyper_voice_exchange_p14.cpp.o",
+      "size_bytes": 75368,
+      "sha256": "7e749680f0e4a6d7d0091bdb12f77c0b21fbab2c7603efdc6f3afebfeca00274",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/hypershell.cpp.o",
+      "size_bytes": 199384,
+      "sha256": "9a4a4a25b38405271cc410d2dbe1b8bcdbd58e728f179b81b996e0e6315ae9c0",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/mono_runtime.cpp.o",
+      "size_bytes": 187024,
+      "sha256": "d8ba461c3e5cb591dde386c8ab6cf155c5321e8e86371877c1599ca1092ab9bf",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/mono_utils.cpp.o",
+      "size_bytes": 142376,
+      "sha256": "92a1f32a4201b168daec87f5c3442683fad1e683539ec46db44659b5370332ab",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/onpress_cheats.cpp.o",
+      "size_bytes": 305816,
+      "sha256": "f8a3ca908a6c2651fe0ff1451a2a7a5478a47d2e427f14f7221a8e7749f55330",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/onpress_misc.cpp.o",
+      "size_bytes": 159944,
+      "sha256": "1426efb9ad0338047a03df1d2e6ecac3acec2851cc1cd1fd5bd5e0d1f998fa78",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/onpress_network.cpp.o",
+      "size_bytes": 149016,
+      "sha256": "c3f5f92450824e9a155059eac474ae07f5625977892aa3b597fec6dd81881c75",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/onpress_overlay.cpp.o",
+      "size_bytes": 126840,
+      "sha256": "e0dc890b218411fba569b7331ba66d780c8ae80c38be2e22d597adff8cb3e257",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/onpress_payloads.cpp.o",
+      "size_bytes": 198904,
+      "sha256": "04e017d06ce6c3a0f20db433cf3fc868139f69f98f5723428518a82ab492f191",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/onpress_plugins.cpp.o",
+      "size_bytes": 125816,
+      "sha256": "4b9067af0f17d35082840a890a129d5b3042206ce87e8e270984152677176893",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/onpress_sprx.cpp.o",
+      "size_bytes": 131688,
+      "sha256": "485c1eb21fa1c81eedb244d9fa38d8e69a8deba737506b2df44a31ac10afb89e",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/onpress_system.cpp.o",
+      "size_bytes": 327600,
+      "sha256": "ecc470e3e2c5b1683fc09b216c04b7b3e948dc5b804d041727a68bb9b1dfcb5b",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/plugin_progress.cpp.o",
+      "size_bytes": 551064,
+      "sha256": "0dff363a8eaaa140632ca6a3b3dfde06972423c9fd9c2afbfde3c11619fe8dc4",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/plugin_sprx_pages.cpp.o",
+      "size_bytes": 857312,
+      "sha256": "8fa7693ac6540bf20c741a710fc6d65cd37201ac18ea62234820919f3e42e929",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/plugin_ui_bridge_client.cpp.o",
+      "size_bytes": 200040,
+      "sha256": "383610b7a11026691fd2f21934954ab3e57df40442b68b89ed3e6f843982ea7d",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/progress_auto_return.cpp.o",
+      "size_bytes": 134792,
+      "sha256": "b6ae43fab4191c6d368a7b060165fa97b0ad9927c299a982d2b7978c81a7dfd8",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/progress_dialog.cpp.o",
+      "size_bytes": 511592,
+      "sha256": "573c17f2020efb2980d35133db5bd7a1595eee2c85a28c21be9795bce7eab415",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/prx.cpp.o",
+      "size_bytes": 260504,
+      "sha256": "63451ad74130a6860c14c4a1b2bda90e874130d6382660a4ab0e9da8aba5de41",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/prx_install.cpp.o",
+      "size_bytes": 97800,
+      "sha256": "95440a78c37d4506e83b75a892ed9a1114c7aac04469032aeeeb605a1029ed68",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/prx_overlay.cpp.o",
+      "size_bytes": 253720,
+      "sha256": "993d2c07b8dddcc3b0c55305241919bf9203e55fdcc40f88c49a76d8b871ca20",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/ps5_settings_ui.cpp.o",
+      "size_bytes": 574936,
+      "sha256": "3083faa0281a101dd8890e367557a94fb143e8696627b1ebaf6b970e41306149",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/remote_play.cpp.o",
+      "size_bytes": 523224,
+      "sha256": "f4f27a8b7121ed5904105e8fa22488362c0e0494811536df6167c4072574b587",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/settings_bundle_patch.cpp.o",
+      "size_bytes": 78544,
+      "sha256": "1d4ab1c29222e9dc994b089843beec00cb833161a51ce5c937259ff6973687c5",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/settings_page_refresh.cpp.o",
+      "size_bytes": 798912,
+      "sha256": "00d5841c960eb98797889ac4f4bc21dc7187c8cc185b85b36224b461d8dc4042",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/settings_page_update.cpp.o",
+      "size_bytes": 523120,
+      "sha256": "dceb03df9b3fff9674aeb15496c336558bc9d823f9442da981bdcabec0b15add",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/settings_ui.cpp.o",
+      "size_bytes": 137272,
+      "sha256": "70139218a58bfe94b7d4d07c0d23bb7b8d329ec37730abbad21a637f74ded33e",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/shellui_globals.cpp.o",
+      "size_bytes": 290184,
+      "sha256": "716be9c366cffb7a844523fde6b9d6919dfd6517dad86c213858885eb9633c30",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/shellui_notify.cpp.o",
+      "size_bytes": 93208,
+      "sha256": "c3c2f0c184f4c35b193bcad74b76d75acfbbb01812c390af1729e55d39216120",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/shellui_overlay_widgets.cpp.o",
+      "size_bytes": 284040,
+      "sha256": "58a5248e2e66b2c5ec76351a63c5fae4c792086fb3df10276a0b115737e990aa",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/shellui_payload_state.cpp.o",
+      "size_bytes": 45832,
+      "sha256": "20bb809682ad8b9122544e23029f0dcb8ac062bce6dc469cd21c3db9ebc828da",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/shellui_proc.cpp.o",
+      "size_bytes": 129072,
+      "sha256": "2d76cda84a21679a54260aeb0e2b4e8edaa305e8074b254ce5f4d040ec98ef5a",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/startup_audio.c.o",
+      "size_bytes": 7656,
+      "sha256": "3e5b7ae9196ad2ac00e333bb13b674c18ac99e92ee6ddcf97a7800011cc49efe",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/startup_audio_asset.c.o",
+      "size_bytes": 486576,
+      "sha256": "4b0a2f75963eda88b519b4a02d3ee9ac81110dd98b26d223a482863cd775f7a4",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/toolbox_i18n.cpp.o",
+      "size_bytes": 1137944,
+      "sha256": "9e89d7cc8d0457a2e6b4b64ed62b70565a969124aa3fd840f8197ab7a8c3cfce",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/toolbox_navigation.cpp.o",
+      "size_bytes": 105544,
+      "sha256": "8bee21abc290cc6af74ef10d718f1ce4418c46bab7eb4da6bc3dfe20bdc0ae2b",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/toolbox_route.cpp.o",
+      "size_bytes": 171504,
+      "sha256": "108af65b47658ccdb6cc56ba6c841804faa13396ffcbaa047bec148404cf1374",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/toolbox_values.cpp.o",
+      "size_bytes": 375024,
+      "sha256": "5e0000c81ede84269177eb8b0abdec14c94c29baec4af95c1d752240d978f353",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/src/toolbox_xml.cpp.o",
+      "size_bytes": 5529112,
+      "sha256": "58ed8110a905fc1148a682d0917036d1bda76539de5770e9a7bb9b92c3f6b332",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/cjson/cJSON.cpp.o",
+      "size_bytes": 175320,
+      "sha256": "3459c42f3cb6cf41eef73a1a7e6d394480686bd3f2f82496f6c51b4f84950663",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/cjson/cJSON_Utils.cpp.o",
+      "size_bytes": 87800,
+      "sha256": "dbfc71d30842959180d85e44422315b22d88331a5838f9b88c6724190407b98d",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/objects/shellui/CMakeFiles/shellui.dir/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/hyperdeck-tools/liveshell/src/liveshell_shellui.cpp.o",
+      "size_bytes": 499504,
+      "sha256": "c317b2c20fdc90a8aa67ce36d1552c7a3f7b253fd8b9804e0342edf5a83df37d",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/parent-build/generated/include/onion/version.h",
+      "size_bytes": 132,
+      "sha256": "74ebdb6d22e6ff833042ba9961cc57ccb7589dd598aa2e9f7081841ae264a8ac",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/parent-build/shellui/generated/toolbox_i18n_catalog.inc",
+      "size_bytes": 455945,
+      "sha256": "45bc62b03b7306655bb781ac18bf0d7b79977ccb5bed452cd6d2ee747b4dfb5d",
+      "executable": false
+    },
+    {
+      "path": "canonical-components/shellui/version-build/generated/include/onion/version.h",
+      "size_bytes": 132,
+      "sha256": "8f159ae4e0202c7f4b2194a76031d2d3194f13486ee7937d2d4928056ca8baee",
+      "executable": false
+    },
+    {
+      "path": "deps/json-c-0.19.tar.gz",
+      "size_bytes": 462232,
+      "sha256": "37ad0249902e301bd9052bf712e511fcc6acff4ecaad4b5900aad9ce564e26de",
+      "executable": false
+    },
     {
       "path": "hyper/hyper-voices.zip",
       "size_bytes": 14806019,
@@ -53,8 +785,8 @@
     },
     {
       "path": "hyper-ai/upstream-source.tar.gz",
-      "size_bytes": 69130539,
-      "sha256": "2ebfe2bc0b67e3bd12ac097fa294992907dc81632291effb970520809c6a7834",
+      "size_bytes": 42391494,
+      "sha256": "8c7193cfe896eb8066591455b64f266888a140944385bd43857cc3076d1a0410",
       "executable": false
     },
     {

@@ -215,7 +215,11 @@ static int begin_runtime_release(const char *title_id, bool public_request,
   bool prepared = owner == &g_service.prepared;
   bool has_owner = g_service.prepared.title_id[0] != '\0' ||
                    g_service.outgoing.title_id[0] != '\0';
-  bool different_title = has_owner && !owner;
+  // A worker must be able to clean its unowned temporary runtime even if the
+  // live game exited meanwhile and its old owner is still awaiting cleanup.
+  bool external_cleanup = !expected && g_service.external_mutation_in_progress;
+  bool different_title = has_owner && !owner && !external_cleanup &&
+                         !(public_request && sm_game_lifecycle_has_active_game());
   bool superseded = expected &&
       (!owner || !owner->game_exited || owner->pid != expected->pid ||
        owner->app_id != expected->app_id ||
@@ -230,6 +234,9 @@ static int begin_runtime_release(const char *title_id, bool public_request,
                  g_service.releasing_title_id[0] != '\0' ||
                  (prepared && g_service.prepare_in_progress) ||
                  (public_request && g_service.external_mutation_in_progress) ||
+                 (public_request && launch_preparation_pending_locked()) ||
+                 (public_request && owner && owner->pid > 0 &&
+                  !owner->game_exited) ||
                  (public_request && prepared &&
                   (g_service.launch_pending || g_service.prepared.app_id != 0));
   if (!blocked) {
@@ -540,12 +547,51 @@ static int handle_launch_request(const char *title_id) {
   return 0;
 }
 
+static bool title_runtime_is_protected(const char *title_id,
+                                       const char *source_path) {
+  if (sm_shellcore_title_is_protected(title_id) ||
+      sm_shellcore_source_is_protected(source_path))
+    return true;
+  char chain[MAX_IMAGE_CHAIN_DEPTH][MAX_PATH];
+  size_t count = 0;
+  if (!read_mount_image_chain(title_id, chain, &count))
+    return is_under_image_mount_base(source_path);
+  for (size_t i = 0; i < count; ++i)
+    if (sm_shellcore_source_is_protected(chain[i]))
+      return true;
+  return false;
+}
+
 int sm_shellcore_mount_title_runtime(
     const char *title_id, const bool *mount_read_only_override) {
-  if (sm_game_lifecycle_has_active_game())
+  if (!is_supported_game_title_id(title_id))
+    return EINVAL;
+  if (!sm_game_lifecycle_has_active_game())
+    return mount_managed_title_runtime(title_id, false, false,
+                                       mount_read_only_override);
+  if (!sm_shellcore_try_begin_external_mutation())
     return EBUSY;
-  return mount_managed_title_runtime(title_id, false, false,
-                                     mount_read_only_override);
+
+  // Discovery-style mounts do not take the live game's prepared owner slot.
+  // The persisted mount link/chain remains the owner of this inactive title.
+  int status = 0;
+  char source_path[MAX_PATH];
+  if (runtime_sleep_mode_active() || sm_shellcore_background_work_blocked())
+    status = EBUSY;
+  else if (!read_mount_link(title_id, source_path, sizeof(source_path)))
+    status = ENOENT;
+  else if (title_runtime_is_protected(title_id, source_path))
+    status = EBUSY;
+  else if (mount_read_only_override && !is_under_image_mount_base(source_path))
+    status = ENOTSUP;
+  else {
+    errno = 0;
+    if (!prepare_title_runtime(title_id, source_path,
+                                 mount_read_only_override))
+      status = errno != 0 ? errno : EIO;
+  }
+  sm_shellcore_end_external_mutation();
+  return status;
 }
 
 int sm_shellcore_unmount_title_runtime(const char *title_id) {
@@ -553,12 +599,15 @@ int sm_shellcore_unmount_title_runtime(const char *title_id) {
     return EINVAL;
   if (runtime_sleep_mode_active())
     return EBUSY;
-  if (sm_game_lifecycle_has_active_game())
+  if (sm_game_lifecycle_has_active_game() &&
+      sm_shellcore_background_work_blocked())
     return EBUSY;
 
   char source_path[MAX_PATH];
   if (!read_mount_link(title_id, source_path, sizeof(source_path)))
     return ENOENT;
+  if (title_runtime_is_protected(title_id, source_path))
+    return EBUSY;
   bool released = release_title_runtime(title_id, true);
   int status = released ? 0 : (errno == EBUSY ? EBUSY : EIO);
   return status;
@@ -673,6 +722,10 @@ static bool release_title_runtime(const char *title_id, bool public_request) {
 }
 
 bool sm_shellcore_release_title_runtime(const char *title_id) {
+  if (sm_shellcore_title_is_protected(title_id)) {
+    errno = EBUSY;
+    return false;
+  }
   return release_title_runtime(title_id, false);
 }
 
@@ -927,18 +980,11 @@ bool sm_shellcore_title_is_protected(const char *title_id) {
   return false;
 }
 
-static bool protected_paths_overlap(const char *a, const char *b) {
-  if (path_matches_root_or_child(a, b) || path_matches_root_or_child(b, a))
-    return true;
-  char resolved_a[PATH_MAX], resolved_b[PATH_MAX];
-  return realpath(a, resolved_a) && realpath(b, resolved_b) &&
-         (path_matches_root_or_child(resolved_a, resolved_b) ||
-          path_matches_root_or_child(resolved_b, resolved_a));
-}
-
 bool sm_shellcore_source_is_protected(const char *path) {
   if (!path || !path[0])
     return false;
+  if (sm_fakelib_source_is_in_use(path) || sm_pkg_backport_source_is_in_use(path))
+    return true;
   char titles[3][MAX_TITLE_ID];
   size_t count = snapshot_protected_titles(titles);
   for (size_t i = 0; i < count; ++i) {
@@ -948,7 +994,7 @@ bool sm_shellcore_source_is_protected(const char *path) {
         return true;
       continue; // Stock PKGs have no managed source; title protection applies.
     }
-    if (protected_paths_overlap(path, runtime_path))
+    if (paths_overlap(path, runtime_path))
       return true;
     char chain[MAX_IMAGE_CHAIN_DEPTH][MAX_PATH];
     size_t layers = 0;
@@ -958,7 +1004,7 @@ bool sm_shellcore_source_is_protected(const char *path) {
       continue;
     }
     for (size_t layer = 0; layer < layers; ++layer)
-      if (protected_paths_overlap(path, chain[layer]))
+      if (paths_overlap(path, chain[layer]))
         return true;
   }
   return false;

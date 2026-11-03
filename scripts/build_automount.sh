@@ -1,48 +1,33 @@
 #!/usr/bin/env bash
-# Build HyperHEN Automount from the user-supplied ShadowMountPlus beta9 source.
-
+# Build the pinned beta11 integration with its reviewed firmware runtime.
 set -euo pipefail
-
 SOURCE_DIR="${1:-}"
 OUTPUT_ELF="${2:-}"
 PS5_PAYLOAD_SDK="${PS5_PAYLOAD_SDK:-}"
+HYPERHEN_CRT="${HYPERHEN_CRT:-}"
+HYPERHEN_LITE="${HYPERHEN_LITE:-0}"
 HYPERHEN_JOBS="${HYPERHEN_JOBS:-4}"
-
-die() {
-  printf 'build_automount: %s\n' "$*" >&2
-  exit 1
-}
-
-[[ -n "${SOURCE_DIR}" && -d "${SOURCE_DIR}" ]] ||
-  die "missing ShadowMountPlus source directory: ${SOURCE_DIR:-<unset>}"
-[[ -n "${OUTPUT_ELF}" ]] || die "missing output ELF path"
-[[ -n "${PS5_PAYLOAD_SDK}" && -d "${PS5_PAYLOAD_SDK}" ]] ||
-  die "PS5_PAYLOAD_SDK must point to an installed PS5 Payload SDK"
-[[ "${HYPERHEN_JOBS}" =~ ^[1-9][0-9]*$ ]] ||
-  die "HYPERHEN_JOBS must be a positive integer"
-
-for required in Makefile LICENSE src/main.c src/sm_scanner.c \
-  src/sm_shellcore_offsets.inc include/sm_runtime.h config.ini.example; do
-  [[ -f "${SOURCE_DIR}/${required}" ]] ||
-    die "vendored dependency is incomplete: ${required}"
+BUILD_TIME="${BUILD_TIME:-2026-10-31T00:00:00Z}"
+die() { printf 'build_automount: %s\n' "$*" >&2; exit 1; }
+[[ -d "$SOURCE_DIR" && -n "$OUTPUT_ELF" ]] || die 'source directory and output ELF required'
+[[ -d "$PS5_PAYLOAD_SDK" ]] || die 'PS5_PAYLOAD_SDK required'
+[[ -f "$HYPERHEN_CRT" ]] || die 'HYPERHEN_CRT must point to the isolated R42 crt1.o'
+[[ "$(sha256sum "$HYPERHEN_CRT" | cut -d ' ' -f 1)" == 817750baf8ff32deb2b480f5c4640978372fe06a952697befa21bc7788edd09b ]] || die 'unexpected CRT checksum'
+[[ "$HYPERHEN_LITE" == 0 || "$HYPERHEN_LITE" == 1 ]] || die 'HYPERHEN_LITE must be0 or1'
+[[ "$HYPERHEN_JOBS" =~ ^[1-9][0-9]*$ ]] || die 'positive HYPERHEN_JOBS required'
+for file in Makefile LICENSE src/main.c src/sm_hyperhen_launch.c include/sm_hyperhen_policy.h tools/build_ps5_json_c.py patches/json-c-0.19-release-free.patch; do
+  [[ -f "$SOURCE_DIR/$file" ]] || die "missing source input: $file"
 done
-
-export PS5_PAYLOAD_SDK
-export PATH="${PS5_PAYLOAD_SDK}/bin:${PATH}"
-
-make -C "${SOURCE_DIR}" clean
-make -C "${SOURCE_DIR}" -j"${HYPERHEN_JOBS}" \
-  VERSION_TAG="1.7-beta9-hyperhen" shadowmountplus.elf
-
-BUILT_ELF="${SOURCE_DIR}/shadowmountplus.elf"
-[[ -s "${BUILT_ELF}" ]] || die "build completed without ${BUILT_ELF}"
-
-mkdir -p "$(dirname "${OUTPUT_ELF}")"
-cp -f "${BUILT_ELF}" "${OUTPUT_ELF}"
-printf '%s\n' \
-  'HyperHEN Automount source: user-supplied ShadowMountPlus-1.7beta9.zip' \
-  'Source ZIP SHA256: 0bf0319e26a53a6c7b58f036a6f051761036c1e3bec7df8da87d5852d9489656' \
-  > "${OUTPUT_ELF}.provenance"
-
-printf 'build_automount: wrote %s (%s bytes)\n' \
-  "${OUTPUT_ELF}" "$(wc -c < "${OUTPUT_ELF}" | tr -d ' ')"
+export PS5_PAYLOAD_SDK HYPERHEN_CRT
+export PATH="$PS5_PAYLOAD_SDK/bin:$PATH"
+make -C "$SOURCE_DIR" clean HYPERHEN_CRT="$HYPERHEN_CRT"
+make -C "$SOURCE_DIR" -j"$HYPERHEN_JOBS" shadowmountplus.elf \
+  HYPERHEN_CRT="$HYPERHEN_CRT" HYPERHEN_LITE="$HYPERHEN_LITE" \
+  VERSION_TAG=1.7beta11-hyperhen BUILD_TIME="$BUILD_TIME"
+mkdir -p "$(dirname "$OUTPUT_ELF")"
+cp "$SOURCE_DIR/shadowmountplus.elf" "$OUTPUT_ELF"
+printf '%s\n' 'HyperHEN Automount1.7beta11 integration' \
+  'Upstream commit30c5a2b791ada7a78ccbda92f4bc3b1fa1cf27dd' \
+  "HYPERHEN_LITE=$HYPERHEN_LITE" \
+  'CRT SHA256817750baf8ff32deb2b480f5c4640978372fe06a952697befa21bc7788edd09b' \
+  > "$OUTPUT_ELF.provenance"

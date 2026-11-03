@@ -19,9 +19,11 @@ using plugin_pages::kSprxDeletePrefix;
 using plugin_pages::kSprxEnabledPrefix;
 using plugin_pages::split_control_id;
 
+std::string inventory_error;
+
 bool refresh_inventory() {
   std::vector<SprxInventoryItem> sprx;
-  const bool loaded = IPC_Client::getInstance(false).ListSprx(sprx);
+  const bool loaded = IPC_Client::getInstance(false).ListSprx(sprx, &inventory_error);
   if (loaded)
     g_ui.external_sprx = std::move(sprx);
   return loaded;
@@ -39,6 +41,8 @@ bool append_inventory(ps5ui::Page &page) {
   if (!refresh_inventory()) {
     page.label("id_external_sprx_unavailable",
                toolbox_i18n::tr("sprx.unavailable"));
+    if (!inventory_error.empty())
+      page.label("id_external_sprx_error", inventory_error);
     return false;
   }
   if (g_ui.external_sprx.empty()) {
@@ -53,10 +57,12 @@ static bool config_model(ps5ui::Node &model, std::string_view id) {
   const bool loaded = refresh_inventory();
   const SprxInventoryItem *found = loaded ? find_sprx(id) : nullptr;
 
-  ps5ui::Page page("id_sprx_config", std::string(id));
+  ps5ui::Page page("id_sprx_config", found ? plugin_pages::sprx_display_name(*found) : std::string(id));
   if (!loaded) {
     page.label("id_external_sprx_unavailable",
                toolbox_i18n::tr("sprx.unavailable"));
+    if (!inventory_error.empty())
+      page.label("id_external_sprx_error", inventory_error);
   } else if (!found) {
     page.label("id_external_sprx_missing", toolbox_i18n::tr("sprx.missing"));
   } else {
@@ -82,13 +88,16 @@ DispatchResult dispatch(std::string_view control_id, std::string_view value) {
     result.action = Action::EnabledChanged;
     const bool enabled = value == "1" || value == "true";
     result.success = client.SetSprxEnabled(result.id, enabled);
-    if (result.success)
-      if (SprxInventoryItem *entry = find_sprx(result.id))
-        entry->enabled = enabled;
+    // Registration may persist even when the attempted load fails or waits for
+    // game execution. Re-read authoritative state rather than guessing from RPC
+    // success or setting an optimistic registered/loaded flag.
+    refresh_inventory();
   } else if (split_control_id(control_id, kSprxDeletePrefix, result.id, 1,
                               31)) {
     result.owned = true;
     result.action = Action::Deleted;
+    const SprxInventoryItem *entry = find_sprx(result.id);
+    if (entry && !entry->registered) return result;
     result.success = client.DeleteSprx(result.id);
     if (result.success)
       std::erase_if(g_ui.external_sprx, [&](const SprxInventoryItem &entry) {

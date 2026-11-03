@@ -1,6 +1,7 @@
 /* Copyright (C) 2025 OnionHEN / LightningMods */
 
 #include "daemon_ops.hpp"
+#include <onion/credentials_guard.h>
 #include "plugin_ipc_server.hpp"
 #include "plugin_manager_runtime.hpp"
 #include "app_lifecycle_runtime.hpp"
@@ -265,7 +266,16 @@ void ForceKillProc(int pid) {
   }
 
   #define DECID_AUTH_ID 0x4800000000000022 // required for killing with sceKernelTerminateProcess / sys_proc_term  syscall
+  HhpSelfCredentialsGuard credentials;
+  if (!credentials.ready()) {
+    LOG_ERROR("ForceKillProc: credential operation unavailable pid=%d", pid);
+    return;
+  }
   uintptr_t authid = set_proc_authid(getpid(), DECID_AUTH_ID);
+  if (!authid) {
+    LOG_ERROR("ForceKillProc: credential setup failed pid=%d", pid);
+    return;
+  }
 
   LOG_INFO("Terminating pid=%d", pid);
   int ret = 0;

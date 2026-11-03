@@ -47,12 +47,13 @@ bool sm_shellcore_ensure_title_runtime(const char *title_id);
 bool sm_shellcore_service_title_is_prepared(const char *title_id);
 // Return true while ShellCore owns any title mount prepared for launch or exit.
 bool sm_shellcore_service_has_prepared_mount(void);
-// Background work may run alongside homebrew or a confirmed unfocused game.
-// Launch preparation, foreground games and pending exits remain blocking.
+// Unrelated work may run alongside any confirmed live game, regardless of focus.
+// Launch preparation, unknown ownership and pending exits remain blocking.
 bool sm_shellcore_background_work_blocked(void);
 // Protect live runtime owners, including a stock PKG without managed links.
 bool sm_shellcore_title_is_protected(const char *title_id);
-// Includes source ancestors/children and every layer of an owned image chain.
+// Includes source ancestors/children, owned image chains and retained fakelib
+// overlays/NSFS backport sources.
 bool sm_shellcore_source_is_protected(const char *path);
 // Exclude new launch preparation while an external AppInst mutation runs.
 bool sm_shellcore_try_begin_external_mutation(void);

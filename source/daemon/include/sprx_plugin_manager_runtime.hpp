@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <string>
 #include <sys/types.h>
 #include <vector>
 
@@ -14,7 +15,7 @@ inline constexpr const char *kCatalogPath =
 
 void start();
 void reconcile();
-std::vector<onion::sprx::SprxInventoryEntry> inventory();
+std::vector<onion::sprx::SprxInventoryEntry> inventory(std::string *error = nullptr);
 onion::sprx::SprxOperationResult set_enabled(std::string_view id,
                                               bool enabled);
 /** Removes only the manifest entry; it never deletes the module file. */

@@ -16,6 +16,9 @@ bool is_under_image_mount_base(const char *path);
 bool is_pfsc_image_mount_base_or_child(const char *path);
 // Return true when path is equal to root or is under it.
 bool path_matches_root_or_child(const char *path, const char *root);
+// Match equal paths or ancestor/child paths, including existing symlink aliases.
+// Lexically overlapping paths need no filesystem lookup.
+bool paths_overlap(const char *a, const char *b);
 // Return true when a path lives on USB-backed storage.
 bool is_usb_storage_path(const char *path);
 // Return true when the path's USB root is mounted, not just an empty mount

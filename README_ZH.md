@@ -1,4 +1,4 @@
-> 本页保留公开版 0.9.2 文档的历史中文译文，并补充 **0.9.4** 的 Hyper、
+> 本页保留公开版 0.9.2 文档的历史中文译文，并补充 **0.9.5** 的插件、12.70 修复、Hyper、
 > Bypervisor 启动流程和下载说明。完整的当前功能、精确固件列表及发布版构建要求请查阅
 > [README.md](README.md)、[RELEASE_NOTES.md](RELEASE_NOTES.md) 和
 > [BUILD_RELEASE.md](BUILD_RELEASE.md)。旧版基础说明不代表所有当前固件采用同一路径。
@@ -46,6 +46,34 @@
 </p>
 
 <br>
+
+# 0.9.5 更新
+
+[下载 HyperHEN v0.9.5 ELF](https://github.com/Michele-M-Media/HYPERHEN/releases/download/HYPERHEN_V0_9_5/HyperHEN-v0.9.5.elf)
+· [查看 0.9.5 发布页](https://github.com/Michele-M-Media/HYPERHEN/releases/tag/HYPERHEN_V0_9_5)
+
+- **12.70 启动修复**：精确路径先检查 Bypervisor 完成状态，再启动专用 HyperCore；
+  专用内核采用上游修正的 12.70 scalar-store 偏移。R48 已在一台 12.70 主机上
+  确认完成 Toolbox 与 HyperDeck 启动。独立 Bypervisor 12.70 ELF 没有更换。
+- **手动加载 PRX / SPRX**：将模块直接放入 `/data/HyperHEN/plugins/` 或
+  `/data/HyperHEN/sprx/`，进入对应游戏，再打开 **工具箱 → 插件 → SPRX**，
+  选择文件并执行 **在当前游戏中加载**，返回游戏完成加载。目录会在启动时准备。
+  已确认 **RaiDougie1.56.2.prx + GTA V CUSA00411 v1.56 + FW 10.01（R71）**；
+  RaiDougie 菜单组合键为 **L1 + □**。其他插件、游戏版本与固件仍需单独测试。
+  模块手动加载，关闭游戏即可卸载；移除目录记录不会删除文件或卸载运行中的模块。
+- **ShadowMountPlus 1.7 beta11**：标准与 lite Automount 均更新，保留原通知、
+  配置、单一挂载管理及固件限制。其他 Kstuff / HyperCore 引擎保持原有输入。
+- **Hyper 7B 语音进展**：Qwen2.5 7B Q5_K_M 已在 R51、FW 10.01 完成一次
+  意大利语语音回复，整轮约 138 秒，仍为**高延迟实验性 Beta**。R52 保留 CPU
+  优化及 512 MiB 权重缓存；这不是总内存需求，也不代表新的主机性能测试结果。
+- **游戏内存**：启动大型游戏或测试插件前，请关闭 Hyper 并等待模型释放。
+  一次测试中，7B 常驻时 GTA V 黑屏但有声音，关闭 Hyper 后游戏可以打开。
+  7B 与大型游戏同时运行尚未验证。
+- **保留旧版修复**：13.00 / 13.20 / 13.60 HyperCore 路径及 13.60 运行时
+  初始化修复已包含在 0.9.4，本版继续保留；不是 0.9.5 新增修复。67 个精确
+  固件条目、HyperDeck、Advanced Debug 及手动关闭 WebKit 后等待两秒的流程不变。
+
+下方 0.9.4 内容为发布历史；当前模型状态以本页 Hyper 表格及英文 README 为准。
 
 # 0.9.4 更新
 
@@ -98,11 +126,15 @@ PS5 本地完成，**不需要 PC，也不把声音发送到在线语音服务**
 | Qwen2.5 3B Q4_K_M | 2.10 GB | 实验性 Beta |
 | Qwen2.5 3B Q5_K_M | 2.44 GB | 实验性 Beta |
 | Qwen2.5 7B Q4_K_M | 4.68 GB | 实验性 Beta；延迟较高 |
-| Qwen2.5 7B Q5_K_M | 5.44 GB | 实验性 Beta；最近测试未在超时前输出语音 |
+| Qwen2.5 7B Q5_K_M | 5.44 GB | 开发版已确认语音回复；实验性 Beta，延迟很高 |
 
 大小使用十进制 MB/GB，表示模型文件存储空间，**不是内存需求**。共享的 Whisper
 模型另占约 78 MB；7B 模型分为两个文件下载。已确认的最小模型结果来自工作配置中的
 完整意大利语对话，不表示每种固件、语言或对话场景都已通过验证。当前推理使用 CPU。
+
+启动大型游戏或测试插件前，请关闭 **启用 Hyper** 并等待助手及模型停止。
+512 MiB 仅为权重缓存，不能代表助手总内存。7B 的单次语音验证并不说明
+所有固件、语言或游戏并行场景都已通过验证。
 
 <br>
 
@@ -154,7 +186,7 @@ HyperHEN 不内置内核漏洞。第一次引导仍需要外部 **9021** 上的 
 2. 让 PS5 进入 **待机模式（Rest Mode）**。
 3. **唤醒主机**，返回主界面。
 4. **再次打开 WebKit**，按加载端要求启动漏洞/ELF 加载器。
-5. 启动 **HyperHEN v0.9.4**。
+5. 启动 **HyperHEN v0.9.5**。
 6. 按提示 **手动关闭 WebKit**，保持浏览器关闭，等待两秒安静间隔以及
    Automount 和工具箱初始化完成。
 
@@ -166,7 +198,7 @@ Bypervisor，不需要在此另行下载 5.xx 文件。13.40/13.42 的 lite 路�
 
 1. 更换版本后先完全重启。9.40、12.70、13.00、13.20、13.60 先按上面的
    Bypervisor 流程操作；其他路径运行内核漏洞利用并启动外部 `elfldr` 服务。
-2. 通过加载端发送下载的 `HyperHEN-v0.9.4.elf` 或自行构建的 `HyperHEN.elf`。
+2. 通过加载端发送下载的 `HyperHEN-v0.9.5.elf` 或自行构建的 `HyperHEN.elf`。
    Bypervisor 路径应在唤醒后的第二次 WebKit 会话中执行此步骤。
 3. 出现旧固件/5.xx 引擎选择器时，确认选择后按提示 **手动关闭 WebKit**。
    其他路径启动 HyperHEN 后也应手动关闭仍打开的加载端浏览器。
@@ -461,6 +493,7 @@ HyperHEN 离不开 PS5 自制软件与逆向工程社区。
 
 - [OnionHEN](https://github.com/aydencharles/onionHEN) — 原始模块化架构；保留 GPLv3、版权声明及内部 `onion::*` 兼容 API
 - [etaHEN](https://github.com/LightningMods/etaHEN) — LightningMods 与贡献者；本仓库的源码基线
+- [etaHEN 11.00–13.60 社区移植版](https://github.com/GronedWaffel/etahen-11.00-13.60) — **GronedWaffel**，基于 **LightningMods 与 etaHEN 贡献者**的工作；用户提供的分支用于插件运行时私有进程读取路径参考，保留上游 libNineS 作者及 GPL 声明。
 - [GoldHEN](https://github.com/GoldHEN/GoldHEN) — SiSTR0 与贡献者；PS4 一体化 HEN，本项目沿这条路走
 
 ### 参考
@@ -472,6 +505,8 @@ HyperHEN 离不开 PS5 自制软件与逆向工程社区。
 
 ### 实际使用或内嵌
 
+- [etaHEN-Plugins](https://github.com/etaHEN/etaHEN-Plugins) — **etaHEN 开发者与贡献者**；插件容器及运行时布局参考，原 etaHEN 致谢继续保留。
+- [GoldHEN Plugins SDK](https://github.com/GoldHEN/GoldHEN_Plugins_SDK) — **SiSTRo、ctn123、OSM、jocover、bucanero、OpenOrbis 贡献者与 nik**；模块激活约定与兼容 ABI 参考，保留 MIT 许可声明，不代表完整 GoldHEN 插件兼容性。
 - [PS5 Payload SDK](https://github.com/ps5-payload-dev/sdk) — Prospero 工具链与头文件
 - [elfldr](https://github.com/ps5-payload-dev/elfldr) — 端口 9021 的首次引导加载器；不打进 payload
 - [kstuff-a53](https://github.com/Soonniicc/kstuff-a53) — 内嵌源码快照，将 kstuff-lite、A53/PPR 与 BackPork 合并为 HyperCore
@@ -515,3 +550,4 @@ HyperHEN 离不开 PS5 自制软件与逆向工程社区。
 
 > HyperHEN 是非官方自制项目，与 Sony Interactive Entertainment 无关。
 > 请只在你自己的主机上使用，风险自负。本项目不提供任何担保。
+

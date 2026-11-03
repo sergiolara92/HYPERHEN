@@ -10,6 +10,8 @@
 // 256 redirect entries are tracked per sandbox. Missing backports and
 // non-NSFS app0 paths are harmless skips.
 bool sm_pkg_backport_on_sandbox_ready(const char *title_id);
+// Query sources held by installed NSFS redirects, including pending cleanup.
+bool sm_pkg_backport_source_is_in_use(const char *path);
 // Remove an unbound redirect when ShellCore aborts the launch.
 void sm_pkg_backport_on_launch_failed(const char *title_id);
 // Bind an installed redirect to the process that consumed the sandbox.

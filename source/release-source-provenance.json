@@ -1,0 +1,42 @@
+{
+  "product": "HyperHEN",
+  "version": "0.9.5",
+  "base_revision": "R71",
+  "base_elf_sha256": "cd4bf0c1ae647551dc3f2dfb23455d210dd20b745a6bf4d865ad44d3be5153ed",
+  "source_revision": "R72 version-only derivative of R71",
+  "native_tree": "/workspace/HyperHEN-R71-Plugin-Runtime-20261103",
+  "worker": {
+    "revision": "R52",
+    "sha256": "a56ee4d551cd9041180af9d194384af9bbc3bb321c6a3f5e41b0115e0dd1ac57"
+  },
+  "automount": "1.7beta11-hyperhen standard/lite; canonical third_party and actual generated C compilation inputs included",
+  "core_1270": "R48 diagnostic core and exact loader include snapshot",
+  "core_13xx": "Retained 0.9.2 exact binary; isolated CRT42 remains explicit",
+  "crt_sha256": "817750baf8ff32deb2b480f5c4640978372fe06a952697befa21bc7788edd09b",
+  "component_files": 33,
+  "input_files": 35,
+  "models_included": false,
+  "console_data_included": false,
+  "closed_plugins_included": false,
+  "hardware_validation": "No new claim; see release documentation",
+  "native_only_source_map": {
+    "third_party/kstuff-1270-r48": "R48 dedicated12.70 compilation",
+    "source/automount/beta11-generated": "R49 actual generated sources",
+    "source/hyper/runtime": "R52 canonical native runtime",
+    "source/hyper/streaming": "R52 canonical provider"
+  },
+  "development_revision": "R72",
+  "version_only_delta_sha256": {
+    "source/include/onion/version.h": "2e9a641dbf17ebcdc594c523ffd1beeaeb7c42d1a558b946cf65605202273747",
+    "source/libonion_sprx/source/ptrace_sprx_runtime.cpp": "3072c4d8b8bd6ff3292f76523c7cc470bde7009911a6935aebeee9838e35bca4",
+    "source/bootstrapper/source/launch_pipeline.c": "62812182722244b15f89a07fb5b39255203918a4ec4f5c49b59ba80660ce2d2d",
+    "VERSION": "8780409dbc52c96276102c5a079a7d3e325510d7bf87af5257508ecc088a3730"
+  },
+  "release_elf_sha256": "dbdecc6187bd43a1f3e84c47874c50c8546673accc969918340c7522a3bb299e",
+  "rebuilt_components_sha256": {
+    "daemon.elf": "3cae821bbc28b6303d57f61730210b75b6116952dca2ce1e99ec2af7fd673297",
+    "shellui.elf": "58e2e72de95991d42eeca8b2f0d6ad0758fe20136bd07329442eddfbfc427c89",
+    "hyperdeck-websrv.elf": "9fe1148912100ec18862a5102936418efedafcab3abd9aa54d741993871d5249"
+  },
+  "native_local_validation": "PASS"
+}

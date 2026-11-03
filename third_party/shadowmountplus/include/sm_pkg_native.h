@@ -62,6 +62,8 @@ int sceAppInstUtilGetInstallStatus(const char *content_id, sm_pkg_native_status_
 int sceAppInstUtilGetPatchInstallStatus(const char *content_id, sm_pkg_native_status_t *status);
 // This API writes one 32-bit state, not a status struct. Verified on firmware 9.40.
 enum { SM_PKG_ADDCONT_INSTALLED = 4 };
+// Installed-content lookup can miss a DLC until its installation is promoted.
+#define SM_PKG_NATIVE_CONTENT_NOT_FOUND ((int32_t)0x80E90004u)
 int sceAppInstUtilGetAddcontInstalledStatus(const char *content_id, int *installed);
 int sceAppInstUtilAppGetSize(const char *title_id, uint64_t *size);
 int sceAppInstUtilAppGetAddcontNum(const char *title_id, uint64_t *count);

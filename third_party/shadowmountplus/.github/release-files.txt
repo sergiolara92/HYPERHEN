@@ -16,6 +16,7 @@ tools/api_test.py
 web/index.html
 licenses/libjpeg-turbo-LICENSE.md
 licenses/libjpeg-turbo-README.ijg
+licenses/json-c-COPYING.txt
 licenses/SMB-NOTICES.txt
 licenses/libsmb2-COPYING.txt
 licenses/libsmb2-LGPL-2.1.txt

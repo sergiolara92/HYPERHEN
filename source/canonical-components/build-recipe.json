@@ -1,0 +1,1041 @@
+{
+  "version": "0.9.5",
+  "components": {
+    "shellui": {
+      "commands": [
+        [
+          "@SDK@/bin/prospero-clang++",
+          "--sysroot=@SDK@/target",
+          "-DHYPERHEN_EXPERIMENTAL_HYPERSHELL=1",
+          "-DHYPERHEN_NATIVE_SHELLUI=1",
+          "-DHYPERHEN_SHELLUI_HYPE_VOICE_PCM=\"@ROOT@/source/canonical-components/shellui/source/shellui/../bootstrapper/assets/hyperhen_start.pcm\"",
+          "-DHYPER_LOCALE_SHELLUI=1",
+          "-I@ROOT@/release-inputs/canonical-components/shellui/version-build/generated/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/shellui/include",
+          "-I@ROOT@/release-inputs/canonical-components/shellui/parent-build/shellui/generated",
+          "-I@ROOT@/third_party/cjson",
+          "-I@ROOT@/third_party/garlic-savemgr/src",
+          "-I@ROOT@/third_party/sha1",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_ipc/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_settings/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_detour/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_proc/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_platform/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_fps/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_plugin_ui/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_plugin_bridge/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_payload/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_detour/../libonion_platform/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_ipc/../libonion_platform/include",
+          "-isystem",
+          "@SDK@",
+          "-isystem",
+          "@SDK@/include",
+          "--target=x86_64-sie-ps5",
+          "-DPPR",
+          "-DPS5",
+          "-Wno-nested-anon-types",
+          "-Wno-gnu-anonymous-struct",
+          "-Wno-zero-length-array",
+          "-Wno-keyword-macro",
+          "-fPIC",
+          "-fPIE",
+          "-march=znver2",
+          "-Wall",
+          "-Werror",
+          "-fstack-protector-all",
+          "-ffunction-sections",
+          "-fdata-sections",
+          "-gfull",
+          "-gdwarf-2",
+          "-pedantic",
+          "-pedantic-errors",
+          "-Os",
+          "-DNDEBUG",
+          "-std=gnu++20",
+          "-fPIE",
+          "-o",
+          "shellui/CMakeFiles/shellui.dir/src/prx.cpp.o",
+          "-c",
+          "@ROOT@/source/canonical-components/shellui/source/shellui/src/prx.cpp"
+        ],
+        [
+          "@SDK@/bin/prospero-clang++",
+          "--sysroot=@SDK@/target",
+          "-DHYPERHEN_EXPERIMENTAL_HYPERSHELL=1",
+          "-DHYPERHEN_NATIVE_SHELLUI=1",
+          "-DHYPERHEN_SHELLUI_HYPE_VOICE_PCM=\"@ROOT@/source/canonical-components/shellui/source/shellui/../bootstrapper/assets/hyperhen_start.pcm\"",
+          "-DHYPER_LOCALE_SHELLUI=1",
+          "-I@ROOT@/release-inputs/canonical-components/shellui/version-build/generated/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/shellui/include",
+          "-I@ROOT@/release-inputs/canonical-components/shellui/parent-build/shellui/generated",
+          "-I@ROOT@/third_party/cjson",
+          "-I@ROOT@/third_party/garlic-savemgr/src",
+          "-I@ROOT@/third_party/sha1",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_ipc/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_settings/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_detour/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_proc/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_platform/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_fps/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_plugin_ui/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_plugin_bridge/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_payload/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_detour/../libonion_platform/include",
+          "-I@ROOT@/source/canonical-components/shellui/source/libonion_ipc/../libonion_platform/include",
+          "-isystem",
+          "@SDK@",
+          "-isystem",
+          "@SDK@/include",
+          "--target=x86_64-sie-ps5",
+          "-DPPR",
+          "-DPS5",
+          "-Wno-nested-anon-types",
+          "-Wno-gnu-anonymous-struct",
+          "-Wno-zero-length-array",
+          "-Wno-keyword-macro",
+          "-fPIC",
+          "-fPIE",
+          "-march=znver2",
+          "-Wall",
+          "-Werror",
+          "-fstack-protector-all",
+          "-ffunction-sections",
+          "-fdata-sections",
+          "-gfull",
+          "-gdwarf-2",
+          "-pedantic",
+          "-pedantic-errors",
+          "-Os",
+          "-DNDEBUG",
+          "-std=gnu++20",
+          "-fPIE",
+          "-o",
+          "shellui/CMakeFiles/shellui.dir/src/toolbox_xml.cpp.o",
+          "-c",
+          "@ROOT@/source/canonical-components/shellui/source/shellui/src/toolbox_xml.cpp"
+        ]
+      ],
+      "link": [
+        "@SDK@/bin/prospero-clang++",
+        "--sysroot=@SDK@/target",
+        "--target=x86_64-sie-ps5",
+        "-DPPR",
+        "-DPS5",
+        "-Wno-nested-anon-types",
+        "-Wno-gnu-anonymous-struct",
+        "-Wno-zero-length-array",
+        "-Wno-keyword-macro",
+        "-fPIC",
+        "-fPIE",
+        "-march=znver2",
+        "-Wall",
+        "-Werror",
+        "-fstack-protector-all",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-gfull",
+        "-gdwarf-2",
+        "-pedantic",
+        "-pedantic-errors",
+        "-Os",
+        "-DNDEBUG",
+        "--start-no-unused-arguments",
+        "-nostartfiles",
+        "--end-no-unused-arguments",
+        "-Wl,--gc-sections",
+        "-Wl,--icf=safe",
+        "shellui/CMakeFiles/shellui.dir/src/account_activator.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/debug_tools.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/dynamic_ui_runtime.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/dynamic_ui_xml.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/external_plugin_ui.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/external_sprx_ui.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/external_symbols.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/homeui_top_nav_patch.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_background.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_boot.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_capture.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_functions.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_launch.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_lifecycle.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_manifest.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_navigator.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_onprecreate.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_onpress.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_page_stack.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hook_usercustom_reset.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_audio_echo.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_audio_module.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_locale.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_mic_monitor.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_output_route_probe.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_output_tone.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_p5_bridge.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_voice_assistant_p14.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_voice_echo_p13.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_voice_exchange_p14.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/hypershell.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/mono_runtime.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/mono_utils.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_cheats.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_misc.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_network.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_overlay.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_payloads.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_plugins.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_sprx.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_system.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/plugin_progress.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/plugin_sprx_pages.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/plugin_ui_bridge_client.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/progress_auto_return.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/progress_dialog.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/prx.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/prx_install.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/prx_overlay.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/ps5_settings_ui.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/remote_play.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/settings_bundle_patch.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/settings_page_refresh.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/settings_page_update.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/settings_ui.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/shellui_globals.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/shellui_notify.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/shellui_overlay_widgets.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/shellui_payload_state.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/shellui_proc.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/startup_audio.c.o",
+        "shellui/CMakeFiles/shellui.dir/src/startup_audio_asset.c.o",
+        "shellui/CMakeFiles/shellui.dir/src/toolbox_i18n.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/toolbox_navigation.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/toolbox_route.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/toolbox_values.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/src/toolbox_xml.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/cjson/cJSON.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/cjson/cJSON_Utils.cpp.o",
+        "shellui/CMakeFiles/shellui.dir/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/hyperdeck-tools/liveshell/src/liveshell_shellui.cpp.o",
+        "-o",
+        "@BUILD@/shellui.elf",
+        "-L@ROOT@/release-inputs/canonical-components/shellui/parent-build/lib",
+        "-L@ROOT@/source/canonical-components/shellui/source/platform/ps5/stubs",
+        "-L@SDK@/target/lib",
+        "-Wl,-rpath,/workspace/HyperHEN-R53-Plugin-Discovery-20261031/build-test/lib:/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/platform/ps5/stubs:/lib",
+        "lib/libonion_payload.a",
+        "lib/libonion_detour.a",
+        "lib/libonion_proc.a",
+        "lib/libonion_platform.a",
+        "lib/libonion_ipc.a",
+        "lib/libonion_settings.a",
+        "lib/libonion_ready.a",
+        "lib/libonion_plugin_ui.a",
+        "lib/libonion_plugin_bridge.a",
+        "-lSceAudioOut",
+        "-lSceRegMgr",
+        "-lSceSystemService",
+        "-lSceUserService",
+        "-lSceNetCtl",
+        "lib/libonion_plugin_ui.a",
+        "@ROOT@/release-inputs/sdk/crt1-r42-1360.o"
+      ],
+      "postlink": [
+        "@SDK@/bin/llvm-objcopy",
+        "--remove-section",
+        ".debug_info",
+        "--remove-section",
+        ".debug_abbrev",
+        "--remove-section",
+        ".debug_line",
+        "--remove-section",
+        ".debug_str",
+        "--remove-section",
+        ".debug_loc",
+        "--remove-section",
+        ".debug_aranges",
+        "--remove-section",
+        ".debug_ranges",
+        "--remove-section",
+        ".debug_pubnames",
+        "--remove-section",
+        ".debug_pubtypes",
+        "--remove-section",
+        ".debug_frame",
+        "--strip-unneeded",
+        "@BUILD@/shellui.elf"
+      ],
+      "expected_sha256": "58e2e72de95991d42eeca8b2f0d6ad0758fe20136bd07329442eddfbfc427c89",
+      "objects_sha256": {
+        "shellui/CMakeFiles/shellui.dir/src/account_activator.cpp.o": "6908d5b4810da6a7049af75b2fe18c61e4cf52fdbd472f3c49ae1e240044d27d",
+        "shellui/CMakeFiles/shellui.dir/src/debug_tools.cpp.o": "2a29b28983b09ac94ca4ff058c10e6b591f20cf8030f64f8a44ddb99a469ac64",
+        "shellui/CMakeFiles/shellui.dir/src/dynamic_ui_runtime.cpp.o": "c62743bea9126320d9a946a8e4e14337bd6871f359ab3b3dc71ebe44e1416ed1",
+        "shellui/CMakeFiles/shellui.dir/src/dynamic_ui_xml.cpp.o": "f9aa14515dd8bbf665f28cbd428d068f2c2d2cd677c253f4b27957460a011f15",
+        "shellui/CMakeFiles/shellui.dir/src/external_plugin_ui.cpp.o": "c54aecd3425b27696686b337ea7ca0c88751eee8bef86e03eee4240ceaa1a9f7",
+        "shellui/CMakeFiles/shellui.dir/src/external_sprx_ui.cpp.o": "c45e82472267975fcc2fa813dd06860607f3453caaa9a327435a6d722037173f",
+        "shellui/CMakeFiles/shellui.dir/src/external_symbols.cpp.o": "6e37eb6d927637d2c39d63e574c030b2b633f5216a957d655950f291cf2f51d1",
+        "shellui/CMakeFiles/shellui.dir/src/homeui_top_nav_patch.cpp.o": "eeea0b29f7bf8db3e8df2eeb5f7a24995d1a8d78797c9e52d0d146b1e7496c50",
+        "shellui/CMakeFiles/shellui.dir/src/hook_background.cpp.o": "b2a3d9ed0e42fa47c2aa2a8f2a8f8551acb54b8880eed67e14ca31606f294326",
+        "shellui/CMakeFiles/shellui.dir/src/hook_boot.cpp.o": "f1f6f78df93beea3b1fb598413c607648276702070742df731c0c9a298db7bb1",
+        "shellui/CMakeFiles/shellui.dir/src/hook_capture.cpp.o": "dd75906a43233d08af25453318c6b78dd53828f06198754984501dc521a17897",
+        "shellui/CMakeFiles/shellui.dir/src/hook_functions.cpp.o": "9aef8595428d4d9ca1f9b00b1ed702f3435d8e15d5e84cd3894faa7f80bf0d33",
+        "shellui/CMakeFiles/shellui.dir/src/hook_launch.cpp.o": "cfb04cb9f3efad7e4ec0dc8f0917172454cba592d0e60359881215f6d56255b2",
+        "shellui/CMakeFiles/shellui.dir/src/hook_lifecycle.cpp.o": "2cfc269599fcc1d945f0e1d105eff14a395d0094f8634ac88a06f8bd95f59ca2",
+        "shellui/CMakeFiles/shellui.dir/src/hook_manifest.cpp.o": "33e653761f00ad1cc43b81b3d3968d253d7d327c42722f120a102b600f2ada82",
+        "shellui/CMakeFiles/shellui.dir/src/hook_navigator.cpp.o": "55c458a8f82a9fab1413f5970d356ce108d92103cf4881456b14a3c16eb9ed84",
+        "shellui/CMakeFiles/shellui.dir/src/hook_onprecreate.cpp.o": "659bc350ea7a928719fa8a51c4d038985847111fad2fdb1993a01736f0a0619c",
+        "shellui/CMakeFiles/shellui.dir/src/hook_onpress.cpp.o": "3efc47e0941201d9d6d8fb1e2ad3ec7b2f4cef4a98ec6be029e4adae82dec1df",
+        "shellui/CMakeFiles/shellui.dir/src/hook_page_stack.cpp.o": "b65ce9ed9251bd8c6580ae76377d4d719862ac00741a97fd0492ccd4d7e54afb",
+        "shellui/CMakeFiles/shellui.dir/src/hook_usercustom_reset.cpp.o": "2a41bcc36e53e29ac7774c3403345e80ab01cbf10aa4a113c0a1424e73950897",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_audio_echo.cpp.o": "f75fdf2adac43461a0db5c1775b73cc454b61b9d8239f6eee6195877007d8e91",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_audio_module.cpp.o": "8d5967ad42fd7ca7698d391a378ea6bdbf763f1e4388cfd8f0b5a9ed9e00386b",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_locale.cpp.o": "a332976241acc5692b1625def8dc6e1b4a8b14645384fc5b24144e9f40d5697a",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_mic_monitor.cpp.o": "d2421047c687b2c4f8b4fdda0325a55f04baf6586253cb03fbf96458c60e4f60",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_output_route_probe.cpp.o": "aa23a099387ca1da60feae3feade0c7ee52a39c80c6e80426bc396822136140b",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_output_tone.cpp.o": "1b9afa1cdb32aeaa4b5ec280fe9a96dd307ea1e49ba16264f072c932dad3aba0",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_p5_bridge.cpp.o": "0ec3858c137df17868730c9c2683fa6cab4a49b592dee234f8ccd9f873ba8833",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_voice_assistant_p14.cpp.o": "1316f5020d992178d0f5a0057df2a0593b963216fb9c44d8354e4179bb17700d",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_voice_echo_p13.cpp.o": "e1d19371b1bcfa09ae1fdec1775d41420a9ddef1708558d7ca7d643e43987386",
+        "shellui/CMakeFiles/shellui.dir/src/hyper_voice_exchange_p14.cpp.o": "7e749680f0e4a6d7d0091bdb12f77c0b21fbab2c7603efdc6f3afebfeca00274",
+        "shellui/CMakeFiles/shellui.dir/src/hypershell.cpp.o": "9a4a4a25b38405271cc410d2dbe1b8bcdbd58e728f179b81b996e0e6315ae9c0",
+        "shellui/CMakeFiles/shellui.dir/src/mono_runtime.cpp.o": "d8ba461c3e5cb591dde386c8ab6cf155c5321e8e86371877c1599ca1092ab9bf",
+        "shellui/CMakeFiles/shellui.dir/src/mono_utils.cpp.o": "92a1f32a4201b168daec87f5c3442683fad1e683539ec46db44659b5370332ab",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_cheats.cpp.o": "f8a3ca908a6c2651fe0ff1451a2a7a5478a47d2e427f14f7221a8e7749f55330",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_misc.cpp.o": "1426efb9ad0338047a03df1d2e6ecac3acec2851cc1cd1fd5bd5e0d1f998fa78",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_network.cpp.o": "c3f5f92450824e9a155059eac474ae07f5625977892aa3b597fec6dd81881c75",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_overlay.cpp.o": "e0dc890b218411fba569b7331ba66d780c8ae80c38be2e22d597adff8cb3e257",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_payloads.cpp.o": "04e017d06ce6c3a0f20db433cf3fc868139f69f98f5723428518a82ab492f191",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_plugins.cpp.o": "4b9067af0f17d35082840a890a129d5b3042206ce87e8e270984152677176893",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_sprx.cpp.o": "485c1eb21fa1c81eedb244d9fa38d8e69a8deba737506b2df44a31ac10afb89e",
+        "shellui/CMakeFiles/shellui.dir/src/onpress_system.cpp.o": "ecc470e3e2c5b1683fc09b216c04b7b3e948dc5b804d041727a68bb9b1dfcb5b",
+        "shellui/CMakeFiles/shellui.dir/src/plugin_progress.cpp.o": "0dff363a8eaaa140632ca6a3b3dfde06972423c9fd9c2afbfde3c11619fe8dc4",
+        "shellui/CMakeFiles/shellui.dir/src/plugin_sprx_pages.cpp.o": "8fa7693ac6540bf20c741a710fc6d65cd37201ac18ea62234820919f3e42e929",
+        "shellui/CMakeFiles/shellui.dir/src/plugin_ui_bridge_client.cpp.o": "383610b7a11026691fd2f21934954ab3e57df40442b68b89ed3e6f843982ea7d",
+        "shellui/CMakeFiles/shellui.dir/src/progress_auto_return.cpp.o": "b6ae43fab4191c6d368a7b060165fa97b0ad9927c299a982d2b7978c81a7dfd8",
+        "shellui/CMakeFiles/shellui.dir/src/progress_dialog.cpp.o": "573c17f2020efb2980d35133db5bd7a1595eee2c85a28c21be9795bce7eab415",
+        "shellui/CMakeFiles/shellui.dir/src/prx_install.cpp.o": "95440a78c37d4506e83b75a892ed9a1114c7aac04469032aeeeb605a1029ed68",
+        "shellui/CMakeFiles/shellui.dir/src/prx_overlay.cpp.o": "993d2c07b8dddcc3b0c55305241919bf9203e55fdcc40f88c49a76d8b871ca20",
+        "shellui/CMakeFiles/shellui.dir/src/ps5_settings_ui.cpp.o": "3083faa0281a101dd8890e367557a94fb143e8696627b1ebaf6b970e41306149",
+        "shellui/CMakeFiles/shellui.dir/src/remote_play.cpp.o": "f4f27a8b7121ed5904105e8fa22488362c0e0494811536df6167c4072574b587",
+        "shellui/CMakeFiles/shellui.dir/src/settings_bundle_patch.cpp.o": "1d4ab1c29222e9dc994b089843beec00cb833161a51ce5c937259ff6973687c5",
+        "shellui/CMakeFiles/shellui.dir/src/settings_page_refresh.cpp.o": "00d5841c960eb98797889ac4f4bc21dc7187c8cc185b85b36224b461d8dc4042",
+        "shellui/CMakeFiles/shellui.dir/src/settings_page_update.cpp.o": "dceb03df9b3fff9674aeb15496c336558bc9d823f9442da981bdcabec0b15add",
+        "shellui/CMakeFiles/shellui.dir/src/settings_ui.cpp.o": "70139218a58bfe94b7d4d07c0d23bb7b8d329ec37730abbad21a637f74ded33e",
+        "shellui/CMakeFiles/shellui.dir/src/shellui_globals.cpp.o": "716be9c366cffb7a844523fde6b9d6919dfd6517dad86c213858885eb9633c30",
+        "shellui/CMakeFiles/shellui.dir/src/shellui_notify.cpp.o": "c3c2f0c184f4c35b193bcad74b76d75acfbbb01812c390af1729e55d39216120",
+        "shellui/CMakeFiles/shellui.dir/src/shellui_overlay_widgets.cpp.o": "58a5248e2e66b2c5ec76351a63c5fae4c792086fb3df10276a0b115737e990aa",
+        "shellui/CMakeFiles/shellui.dir/src/shellui_payload_state.cpp.o": "20bb809682ad8b9122544e23029f0dcb8ac062bce6dc469cd21c3db9ebc828da",
+        "shellui/CMakeFiles/shellui.dir/src/shellui_proc.cpp.o": "2d76cda84a21679a54260aeb0e2b4e8edaa305e8074b254ce5f4d040ec98ef5a",
+        "shellui/CMakeFiles/shellui.dir/src/startup_audio.c.o": "3e5b7ae9196ad2ac00e333bb13b674c18ac99e92ee6ddcf97a7800011cc49efe",
+        "shellui/CMakeFiles/shellui.dir/src/startup_audio_asset.c.o": "4b0a2f75963eda88b519b4a02d3ee9ac81110dd98b26d223a482863cd775f7a4",
+        "shellui/CMakeFiles/shellui.dir/src/toolbox_i18n.cpp.o": "9e89d7cc8d0457a2e6b4b64ed62b70565a969124aa3fd840f8197ab7a8c3cfce",
+        "shellui/CMakeFiles/shellui.dir/src/toolbox_navigation.cpp.o": "8bee21abc290cc6af74ef10d718f1ce4418c46bab7eb4da6bc3dfe20bdc0ae2b",
+        "shellui/CMakeFiles/shellui.dir/src/toolbox_route.cpp.o": "108af65b47658ccdb6cc56ba6c841804faa13396ffcbaa047bec148404cf1374",
+        "shellui/CMakeFiles/shellui.dir/src/toolbox_values.cpp.o": "5e0000c81ede84269177eb8b0abdec14c94c29baec4af95c1d752240d978f353",
+        "shellui/CMakeFiles/shellui.dir/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/cjson/cJSON.cpp.o": "3459c42f3cb6cf41eef73a1a7e6d394480686bd3f2f82496f6c51b4f84950663",
+        "shellui/CMakeFiles/shellui.dir/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/cjson/cJSON_Utils.cpp.o": "dbfc71d30842959180d85e44422315b22d88331a5838f9b88c6724190407b98d",
+        "shellui/CMakeFiles/shellui.dir/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/hyperdeck-tools/liveshell/src/liveshell_shellui.cpp.o": "c317b2c20fdc90a8aa67ce36d1552c7a3f7b253fd8b9804e0342edf5a83df37d",
+        "lib/libonion_payload.a": "9cba743882d11590825f184da2c6507b72e4a15046e3e5e9adfddcbcb80c5d7e",
+        "lib/libonion_detour.a": "5bc5610fa0779913dbf13e94ea81d282a5b12e1fbf2d38007b7c292bf585b8ad",
+        "lib/libonion_proc.a": "d338b1908343dc196b4efce4a7957841f4ad7cac6716592cf95f1d49a65ab8d1",
+        "lib/libonion_platform.a": "b9048e7aa71ed68ad81ee1deac2dc19a8f6bece1b24e5dbbe7d603ff357a0f25",
+        "lib/libonion_ipc.a": "d84bf2a1f89a3029fdccdd3f4f12e908816297956033bb659b4128728c6ee0ec",
+        "lib/libonion_settings.a": "ca01ff627d3ee97455e9f128fb42d91b54ee2273b8a37d709b8cf3f0253e25cc",
+        "lib/libonion_ready.a": "6405b7e169a876a77ea794b1cf4c2576fa82ab25ee41624a6451e67f5339e642",
+        "lib/libonion_plugin_ui.a": "c42e25646a0f7868993986d3599141fd23132e004decd4dc3eff0b24554af399",
+        "lib/libonion_plugin_bridge.a": "4629d8717f6cbd622f4f42c24ba27c423946c42fde268f3912c39fc17445663d",
+        "shellui/CMakeFiles/shellui.dir/src/prx.cpp.o": "63451ad74130a6860c14c4a1b2bda90e874130d6382660a4ab0e9da8aba5de41",
+        "shellui/CMakeFiles/shellui.dir/src/toolbox_xml.cpp.o": "58ed8110a905fc1148a682d0917036d1bda76539de5770e9a7bb9b92c3f6b332"
+      },
+      "prefix_maps": [
+        [
+          "@ROOT@/source/canonical-components/shellui/source",
+          "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source"
+        ],
+        [
+          "@ROOT@/third_party",
+          "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party"
+        ],
+        [
+          "@ROOT@/release-inputs/canonical-components/shellui/version-build",
+          "/workspace/HyperHEN-v095-Release-20261103/version-shellui"
+        ],
+        [
+          "@ROOT@/release-inputs/canonical-components/shellui/parent-build",
+          "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/build-test"
+        ],
+        [
+          "@ROOT@/release-inputs/sdk/crt1-r42-1360.o",
+          "/workspace/Hyper-R42-CRT-20261029/crt1.o"
+        ]
+      ],
+      "original_version_build": "/workspace/HyperHEN-v095-Release-20261103/version-shellui",
+      "baseline_relink_byte_identical": true,
+      "canonical_parent": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031",
+      "compiled_sources": [
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/account_activator.cpp",
+          "sha256": "77d2569953f043e80eab9ec33d3ace3e15ce0a409032c76b61d573a6787a9e17"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/debug_tools.cpp",
+          "sha256": "dd9b12ffe28eb7e9a459b57a8161bdd3558b9e61b90bee2835e7b2c21c3a3d16"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/dynamic_ui_runtime.cpp",
+          "sha256": "80541ba06bc1f3c9febc4174160cd6597ba0b866f5a5804eca66c7b477579eee"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/dynamic_ui_xml.cpp",
+          "sha256": "706ee2410bab52c9a171cb9dfcefe2fd02639a8ff1c59d54ac88367bd5950cba"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/external_plugin_ui.cpp",
+          "sha256": "da450126e4f5186ec89a9b554e2187da6124241b72d2e67a3f0952fa53fca27b"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/external_sprx_ui.cpp",
+          "sha256": "93e9e61ca502f1df9485f739a9f289a22b9db7772a3670d5f018582ae7724d57"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/external_symbols.cpp",
+          "sha256": "f38027e5abff8cec658b9344faa3de7efce24c0b8ac22b41fb55a1b3c6700870"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/homeui_top_nav_patch.cpp",
+          "sha256": "9c3c2226dd892e967d70a5c0147d178d8550f28c028e3764def0d50262679c97"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_background.cpp",
+          "sha256": "d808ce0b240ed2fbf5a6846ea784ab9e806f9adb51ca2223a6be3af75076b0b5"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_boot.cpp",
+          "sha256": "a898b291790333f8caf37d421114bcccfe627696079715e71491b0c0dc27d384"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_capture.cpp",
+          "sha256": "12330b23e518fe399f31adaa20fa5606667c513ef1bce1c9edc6b2fdabe4d73a"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_functions.cpp",
+          "sha256": "9b54aef346c4fbdec0e1490914eb3e64726382edf74bb7017fc55131941a1347"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_launch.cpp",
+          "sha256": "4c60f650ea4630975a6b2e947003978e15d5aca72a1e9f7e0da1a5533ab52430"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_lifecycle.cpp",
+          "sha256": "a13262540ae338b49a863e7bf9e2a8f9aed2a0cc525ff892051a23ddc3272ecd"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_manifest.cpp",
+          "sha256": "c071b89d05d345b6413819039cdd7d9f0bafc4f5154aaf7f989154af16485a37"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_navigator.cpp",
+          "sha256": "6eb3b12764b7b2f09974f733d7df9fdc891c694d14598fca23da0d59122c527d"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_onprecreate.cpp",
+          "sha256": "55b977850ae860c34dccda3f0f51ba99b26ad7433e142acde5a3db1b736de5f4"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_onpress.cpp",
+          "sha256": "2a5542006a4eb2e9db548c569de43072bbf6f4f4fdf11185b0323bc1c0a954d3"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_page_stack.cpp",
+          "sha256": "a28b5a1535afe5ea8f939a8b9fe1d9a926e659102494605ad32a98e9fa3cce95"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hook_usercustom_reset.cpp",
+          "sha256": "33840755966ef29bfb70bd613f441344833cb8158db3ae1fe9b43d15e1380934"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hyper_audio_echo.cpp",
+          "sha256": "4b4c14d2dbb938b143223d5279d6f2b8ba3b1a5c7731aec1dd270e258606032d"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hyper_audio_module.cpp",
+          "sha256": "5650beaea530aa63f359e1b37bbfef36c8da0274063a27e90dce816064143a1d"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hyper_locale.cpp",
+          "sha256": "aeb12f1e575802ed9d7cfaf8db9d963d45830983ed1f2605d3c6e79b9a381b7b"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hyper_mic_monitor.cpp",
+          "sha256": "64a9628aca035c697bbd5efb5dbac0ea59ff6768c161d061a963bf7512c59f25"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hyper_output_route_probe.cpp",
+          "sha256": "9b2546143bbd0987732ec626a823cba8b1e601018fd99c3545bee67d60aabf32"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hyper_output_tone.cpp",
+          "sha256": "588321796b13a360e3d65293891133e55381e028bfe27ee54e00ee7593688fc0"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hyper_p5_bridge.cpp",
+          "sha256": "b38abc179e7905c9a39c76a69c11908b79fe293b5ba6c2a8c962636a153340ed"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hyper_voice_assistant_p14.cpp",
+          "sha256": "6787f02c43edd570bc2eb344dab528d74b44ef75e38a012f83b68bec8e5a1cc9"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hyper_voice_echo_p13.cpp",
+          "sha256": "c2b87d66f03224141653055d3a1d3d2f6301c51bf27373ce4396dfe8a1129e41"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hyper_voice_exchange_p14.cpp",
+          "sha256": "ae2981577b36aec4e0e35aeee4707d6df63895f321226d4db071d8a986d58e65"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/hypershell.cpp",
+          "sha256": "641439c655ff56d6c1ca07e723b57edaad44aad45d9f1dccaccacb3553510c13"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/mono_runtime.cpp",
+          "sha256": "03806008d65d575bb9374494f336f5e5a4629c23166ef07b8364b6374509756d"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/mono_utils.cpp",
+          "sha256": "bf3e1208e8660b8411cbebdcccf936e6da990fcb42e7d509f761db8513db340b"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/onpress_cheats.cpp",
+          "sha256": "8bc7d21933200b4f408cd225fc7cdac67c422748d2a0cdc4b600b5268e4243a3"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/onpress_misc.cpp",
+          "sha256": "58fb60c48994be23ec9fa439db26863f3b38950a870d14b1c1d5e7bba7fb3446"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/onpress_network.cpp",
+          "sha256": "433234641e525456c0a5ec825d4b6705d84409591e1f27130e1cfa17fa4e7953"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/onpress_overlay.cpp",
+          "sha256": "e25b7a4bb80ce1e0df0eaf3013bc69386770274db41f1a09ab85da9c7bd5a146"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/onpress_payloads.cpp",
+          "sha256": "2662c4937f683ce48e288ac135148b73a99d95519f62dce1fc1af4e3159e05cd"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/onpress_plugins.cpp",
+          "sha256": "819583ff89b06c398d908a77bb035939601b955f0f399e5727ccfb1b8363e57e"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/onpress_sprx.cpp",
+          "sha256": "ddc32284837a90eafd30e188b81a6b85aafa8ac58c25d174bdc83c15617a0d2e"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/onpress_system.cpp",
+          "sha256": "b0b62910b244736d4f6323f6b430d8fc2f5059bd0b9e869d2b4ac27d0d033d67"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/plugin_progress.cpp",
+          "sha256": "34fa530f29ed7ceb305dcfcefc7a0cabdad13cab71792b2a223c39b3cd88e3ab"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/plugin_sprx_pages.cpp",
+          "sha256": "65d9378bbc3c54799eb7b3dfdf70a6d8543dc492d6e4e510e1aefe83d8270c85"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/plugin_ui_bridge_client.cpp",
+          "sha256": "9668228324d749313b7867303d6aa0ff27974372f993e7c189f1136f6542a923"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/progress_auto_return.cpp",
+          "sha256": "968d33115a3f63ba597788ba8d8eb0512e03b38f9ff25172834bcec1d490687c"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/progress_dialog.cpp",
+          "sha256": "ad714cd7aa5e26936137ace03244c21c87c9b9ff2639f3244146da2bdfcfabea"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/prx.cpp",
+          "sha256": "4367a0697e0e053874c2a6e9d122a8f750f6ef0a4d07e1b650eda41403c3219c"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/prx_install.cpp",
+          "sha256": "ef9a044669c042c6a78ec20f8b1e9c30ae04d73791e6e4313d85ae5e09992557"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/prx_overlay.cpp",
+          "sha256": "1343e9bf977c1e683ad119ddc9793f506c8cd5a1f9dcda8a55c73a8e3b8f4458"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/ps5_settings_ui.cpp",
+          "sha256": "80a7cd8d5b227833b3c99b9fee44d2581fe8a3b6716875f46ed07afd67763c72"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/remote_play.cpp",
+          "sha256": "b108e6775f5944d78991a8923cde84ff4a1657c7374fade646dd678a413c20b6"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/settings_bundle_patch.cpp",
+          "sha256": "26defa83b119b3fbb4d3edfb09fae0df971159f021663cb71848f1a517e8300c"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/settings_page_refresh.cpp",
+          "sha256": "d6afda81ca9b6f39bd7bec29595f5c2f5c5cb3399cf8e0875dd78014811165fb"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/settings_page_update.cpp",
+          "sha256": "3e3b533721092859aa2a88b19f385f1dade8baaa4ccf67f030cc36840184c5cd"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/settings_ui.cpp",
+          "sha256": "22c3bd9fafcc60ec81f66e4eaf3fb0af4e95e915d8171e003f5e08b287569ef0"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/shellui_globals.cpp",
+          "sha256": "44e37b067fedf0772518664f52fdbf14f5255c0b82da7a30343c68043a13eb61"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/shellui_notify.cpp",
+          "sha256": "dc4e3d2728b975f0682626b5dfca164c556d09f9b2c3ecc736ced7767ed531e1"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/shellui_overlay_widgets.cpp",
+          "sha256": "3809ec14a4d5260fdc7698d95343df4c1a866bf801d7043cb7cd9563db62cf85"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/shellui_payload_state.cpp",
+          "sha256": "d93580777d66c07dec753cfbbd25465e7442088916d2bf7f932416b5a9e64561"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/shellui_proc.cpp",
+          "sha256": "d0ea876785b6624dee5cb2d58106db9655f9589d3a7b3ddc687da6da428f3559"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/startup_audio.c",
+          "sha256": "c46baaddbe28f56673c6e5e4f9a2fd2e47d4f44e5bb77316e5d84c0871d0a266"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/startup_audio_asset.c",
+          "sha256": "feaa53daa7e832bcf98ef284bdd7bc2899a3f8383aad0caf71e961962e25483f"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/toolbox_i18n.cpp",
+          "sha256": "18760da93375c6ebc235cb3c3b1f40b4153752a42f6c1e1e88eadb2af5fb43ff"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/toolbox_navigation.cpp",
+          "sha256": "503bd6e0b6afa6a291b301624fcbed2225d36c1abcec4ca0caac7f6372236b51"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/toolbox_route.cpp",
+          "sha256": "4d0b6a0b2d0c3e3ec91517c3d0a7862dc56ca359df10ff5ce102c22679208997"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/toolbox_values.cpp",
+          "sha256": "624b162488d54c91f1551240a21f7ead36c7e18b7a9b04da0884a5023788ee41"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/shellui/src/toolbox_xml.cpp",
+          "sha256": "cf65920f8d36c517d69255963a59def4c535a3c88fd4e3e3402be412788f581b"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/cjson/cJSON.cpp",
+          "sha256": "60186aad9725421652a4784222fa8a9acf37dc3aa27f71ddb04fe167bbd5c2d5"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/cjson/cJSON_Utils.cpp",
+          "sha256": "c84ca8748f4604c1446c828fc929d407e5d7677a240a4d223f167e524d473658"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/hyperdeck-tools/liveshell/src/liveshell_shellui.cpp",
+          "sha256": "81df7f0da135c3e285a0b14fee6d9cdf665caff05110a3d570937fdd5864a366"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_payload/source/payload.c",
+          "sha256": "ca1d4289cd802727018cda3316a067836778ccbb2978788d47fd4baadf10d1a6"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_payload/source/payload_config.c",
+          "sha256": "4fbe1a862840f1059d2c72228c17584f145413ce51239553c9fe61cfd98976fc"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_platform/source/fs.c",
+          "sha256": "03a45d51502c177aaa05cc8001e6d80ff4dccbb633fd900ae9a156ba30e5e244"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_platform/source/tree.c",
+          "sha256": "df6db33cb15004bd779ff8c921641708695ac8a387827cd692e05a019656f64d"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_platform/source/log.c",
+          "sha256": "bfb0196179dcb37ad35671daa6cb11d2cef26e299b46e5166dfca4e2bd69c2b3"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_platform/source/net.c",
+          "sha256": "aa008f3182f9c52acf3115b6db85fe938efbea9ac9ea5dfa7438f1b12577e925"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_platform/source/notify.c",
+          "sha256": "f0ad2be74d1d30885bad610175ac7081467ad4a5989833e97ebb0190aad7e0ca"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_platform/source/notify_i18n.c",
+          "sha256": "029aa450d51f11b1756249ba60a789cee65ee9b79388e16aea3d59bffdaeae45"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/third_party/cjson/cJSON.cpp",
+          "sha256": "60186aad9725421652a4784222fa8a9acf37dc3aa27f71ddb04fe167bbd5c2d5"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_proc/source/proc.cpp",
+          "sha256": "053ca100e8034815f9bbec5f77f2ca719bb1e0aa198f9fd610cd0793d2edec60"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_proc/source/ucred.cpp",
+          "sha256": "b1fdb1b550c49e9280a3fb7544792f508ba06fdb15f7f8766c547a6b39015074"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_proc/source/proc_query.cpp",
+          "sha256": "8e0a0889901864775b3ac883416dd10f21c2f6bd78f87ef04dc822a7528868d7"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_proc/source/proc_dmap.cpp",
+          "sha256": "88dafe30984774bba4c70fb16a8a47162a284f4d49fef2c9cdb94e676c33a482"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_detour/source/detour.cpp",
+          "sha256": "fcea69c819ad1ec6a585423453bbeb30025bd6bbd9fcedafe8918721a8c18c9a"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_detour/source/hde64.cpp",
+          "sha256": "96256e0231b6e156ff2f157bead95ccd716607156ecde400ee39302b00bb23c5"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_detour/source/hotpatch.cpp",
+          "sha256": "37f5c862591630f0bbdfe5ef0508872ea31e3ae3404e4105466d51ec25dfba13"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_detour/source/trampoline_arena.cpp",
+          "sha256": "db6434974cbf62b05516cfaf55c2957ba1700a720e02a9f66dd13ce3ae948d04"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_detour/source/x64_relocator.cpp",
+          "sha256": "6fa753b645d20febe31642061c635ba489f8db814bf1e107107c3f19fd702b42"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_ipc/source/ipc_client.cpp",
+          "sha256": "ca8ba6859fc807edf38cdb9b357b2eca406959b6a36f1c71f907bcdbf9b785a1"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_ipc/source/ipc_server.cpp",
+          "sha256": "cf6e71b60fffe86421d6255baa51c6961f8ea6890ecdc9fa16c5185f120c657d"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_settings/source/settings.cpp",
+          "sha256": "a1cbe5c057b911c37d4e0e39b72ff1e3cd2fd8a1f61f61bb96c3c6c895bacfda"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_ready/source/ready.c",
+          "sha256": "a6c899fbdfe0ae3b56ff82b43175cc0473cad9a0f88ece50ca3c0ddabe06cbd5"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_plugin_ui/source/plugin_ui.cpp",
+          "sha256": "8f121daf58d4c97e5734dcb756f6da0cdf6fcaf4e06a35e20fd58a15cd987d4d"
+        },
+        {
+          "source": "/workspace/HyperHEN-R53-Plugin-Discovery-20261031/source/libonion_plugin_bridge/source/plugin_ui_bridge.cpp",
+          "sha256": "5e0a6a1677c3d8e5bb516fc072328857f09fbf88bcb3e9a4cf08e903a1bb3bcc"
+        }
+      ]
+    },
+    "hyperdeck": {
+      "commands": [
+        [
+          "@SDK@/bin/prospero-clang++",
+          "--sysroot=@SDK@/target",
+          "-DHYPERHEN_CHEATRUNNER_ELF=\"@ROOT@/release-inputs/canonical-components/hyperdeck/parent-build/vendor/hyperdeck-engines/cheatrunner.elf\"",
+          "-DHYPERHEN_GAME_COMPRESSOR_ELF=\"@ROOT@/release-inputs/canonical-components/hyperdeck/parent-build/vendor/hyperdeck-engines/game-compressor.elf\"",
+          "-DHYPERHEN_PKG_HELPER_ELF=\"/workspace/HyperHEN-v0.9.4-R45-20261030/release-components/hyperdeck-pkg-helper.elf\"",
+          "-DHYPERHEN_PS5UPLOAD_ELF=\"@ROOT@/release-inputs/canonical-components/hyperdeck/parent-build/vendor/hyperdeck-engines/ps5upload.elf\"",
+          "-DHYPERHEN_WEB_FILE_MANAGER_ELF=\"@ROOT@/release-inputs/canonical-components/hyperdeck/parent-build/vendor/hyperdeck-engines/web-file-manager.elf\"",
+          "-I@ROOT@/release-inputs/canonical-components/hyperdeck/version-build/generated/include",
+          "-I@ROOT@/source/canonical-components/hyperdeck/source/include",
+          "-I@ROOT@/source/canonical-components/hyperdeck/source/hyperdeck/include",
+          "-I@ROOT@/release-inputs/canonical-components/hyperdeck/parent-build/vendor/websrv-http/include",
+          "-I@ROOT@/third_party/websrv/src",
+          "-I@ROOT@/source/canonical-components/hyperdeck/source/libonion_elfldr/include",
+          "-I@ROOT@/source/canonical-components/hyperdeck/source/libonion_ipc/include",
+          "-I@ROOT@/source/canonical-components/hyperdeck/source/libonion_ipc/../libonion_platform/include",
+          "-I@ROOT@/source/canonical-components/hyperdeck/source/libonion_payload/include",
+          "-I@ROOT@/source/canonical-components/hyperdeck/source/libonion_proc/include",
+          "-I@ROOT@/source/canonical-components/hyperdeck/source/libonion_platform/include",
+          "-I@ROOT@/source/canonical-components/hyperdeck/source/libonion_settings/include",
+          "-isystem",
+          "@SDK@",
+          "-isystem",
+          "@SDK@/include",
+          "--target=x86_64-sie-ps5",
+          "-march=znver2",
+          "-DPPR",
+          "-DPS5",
+          "-fPIC",
+          "-fstack-protector-all",
+          "-O1",
+          "-Wall",
+          "-Wextra",
+          "-fno-exceptions",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++20",
+          "-fPIE",
+          "-o",
+          "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/backend_ps5.cpp.o",
+          "-c",
+          "@ROOT@/source/canonical-components/hyperdeck/source/hyperdeck/backend_ps5.cpp"
+        ]
+      ],
+      "link": [
+        "@SDK@/bin/prospero-clang++",
+        "--sysroot=@SDK@/target",
+        "--target=x86_64-sie-ps5",
+        "-march=znver2",
+        "-DPPR",
+        "-DPS5",
+        "-fPIC",
+        "-fstack-protector-all",
+        "-O1",
+        "-Wall",
+        "-Wextra",
+        "-fno-exceptions",
+        "-O3",
+        "-DNDEBUG",
+        "--start-no-unused-arguments",
+        "-nostartfiles",
+        "--end-no-unused-arguments",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/server.cpp.o",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/backend_ps5.cpp.o",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/engine_runtime_ps5.cpp.o",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/pkg_catalog.cpp.o",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/pkg_transport_ps5.cpp.o",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/json.cpp.o",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/hyperdeck_assets.c.o",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/workspace/HyperHEN-v0.9.4-R45-20261030/third_party/websrv/src/asset.c.o",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/__/common/elfldr_remote.c.o",
+        "-o",
+        "@BUILD@/hyperdeck-websrv.elf",
+        "-L@ROOT@/release-inputs/canonical-components/hyperdeck/parent-build/lib",
+        "-L@ROOT@/source/canonical-components/hyperdeck/source/platform/ps5/stubs",
+        "-Wl,-rpath,/workspace/HyperHEN-v0.9.4-R45-20261030/build-release/lib:/workspace/HyperHEN-v0.9.4-R45-20261030/source/platform/ps5/stubs",
+        "vendor/websrv-http/lib/libmicrohttpd.a",
+        "lib/libonion_elfldr.a",
+        "lib/libonion_ipc.a",
+        "lib/libonion_payload.a",
+        "lib/libonion_proc.a",
+        "lib/libonion_settings.a",
+        "lib/libonion_ready.a",
+        "lib/libonion_platform.a",
+        "-lkernel_sys",
+        "-lSceSystemService",
+        "-lSceNetCtl",
+        "-lSceUserService",
+        "@ROOT@/release-inputs/sdk/crt1-r42-1360.o"
+      ],
+      "postlink": [
+        "@SDK@/bin/llvm-objcopy",
+        "--remove-section",
+        ".debug_info",
+        "--remove-section",
+        ".debug_abbrev",
+        "--remove-section",
+        ".debug_line",
+        "--remove-section",
+        ".debug_str",
+        "--remove-section",
+        ".debug_loc",
+        "--remove-section",
+        ".debug_aranges",
+        "--remove-section",
+        ".debug_ranges",
+        "--remove-section",
+        ".debug_pubnames",
+        "--remove-section",
+        ".debug_pubtypes",
+        "--remove-section",
+        ".debug_frame",
+        "--strip-unneeded",
+        "@BUILD@/hyperdeck-websrv.elf"
+      ],
+      "expected_sha256": "9fe1148912100ec18862a5102936418efedafcab3abd9aa54d741993871d5249",
+      "objects_sha256": {
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/server.cpp.o": "a31da474090466a1ca2c77cca33b2b937f3d745e7980460539e450502c4c4c9d",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/engine_runtime_ps5.cpp.o": "86e0428428c35496aadb0365e14a5cc09e8b512aaf74475dbdeb5f431e06fd3b",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/pkg_catalog.cpp.o": "225b4afb4803c9a6137c43031e428d1986fdc9b43076639859e9d39d283fc134",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/pkg_transport_ps5.cpp.o": "d1d5ce828a1107262997eaded4a128ecdc039fd6756b378a686c072daec112fd",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/json.cpp.o": "12e700ec4706f7f7099e786b2af8880eb485abab6498cd39e61c86d33350cff2",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/hyperdeck_assets.c.o": "c1a4d7a5d63d5d689fe311eff3641de66ed75e68b4d24a4b77f0caad69b1536d",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/workspace/HyperHEN-v0.9.4-R45-20261030/third_party/websrv/src/asset.c.o": "e245dc410e70224b9bc306ef7ad2f97c902a0bc7fa9f2dcf588f8736798c9199",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/__/common/elfldr_remote.c.o": "5f39717c99b8be7c467985b8d5162b8310390a1939593875f381bd053582f398",
+        "vendor/websrv-http/lib/libmicrohttpd.a": "795d7f66b5b6e2b93cadf777fb85714cce7e690c206c16cf4e5a7e674a0e1bcc",
+        "lib/libonion_elfldr.a": "81cc05813fb196418d9582aad1deec7b9e96f127b772b2ba8b822e8f0a99884c",
+        "lib/libonion_ipc.a": "8c522ee090ee6bb9b266f2d32e252a5a3801b854d7e67c4824b35b2f92e8a162",
+        "lib/libonion_payload.a": "9cba743882d11590825f184da2c6507b72e4a15046e3e5e9adfddcbcb80c5d7e",
+        "lib/libonion_proc.a": "d338b1908343dc196b4efce4a7957841f4ad7cac6716592cf95f1d49a65ab8d1",
+        "lib/libonion_settings.a": "ca01ff627d3ee97455e9f128fb42d91b54ee2273b8a37d709b8cf3f0253e25cc",
+        "lib/libonion_ready.a": "6405b7e169a876a77ea794b1cf4c2576fa82ab25ee41624a6451e67f5339e642",
+        "lib/libonion_platform.a": "b9048e7aa71ed68ad81ee1deac2dc19a8f6bece1b24e5dbbe7d603ff357a0f25",
+        "hyperdeck/CMakeFiles/hyperdeck_websrv.dir/backend_ps5.cpp.o": "7e096975cc2e0359a55ca261e4daa32b340f4602a44960419ad6a66c30f6a522"
+      },
+      "prefix_maps": [
+        [
+          "@ROOT@/source/canonical-components/hyperdeck/source",
+          "/workspace/HyperHEN-v0.9.4-R45-20261030/source"
+        ],
+        [
+          "@ROOT@/third_party",
+          "/workspace/HyperHEN-v0.9.4-R45-20261030/third_party"
+        ],
+        [
+          "@ROOT@/release-inputs/canonical-components/hyperdeck/version-build",
+          "/workspace/HyperHEN-v095-Release-20261103/version-hyperdeck"
+        ],
+        [
+          "@ROOT@/release-inputs/canonical-components/hyperdeck/parent-build",
+          "/workspace/HyperHEN-v0.9.4-R45-20261030/build-release"
+        ],
+        [
+          "@ROOT@/release-inputs/sdk/crt1-r42-1360.o",
+          "/workspace/Hyper-R42-CRT-20261029/crt1.o"
+        ]
+      ],
+      "original_version_build": "/workspace/HyperHEN-v095-Release-20261103/version-hyperdeck",
+      "baseline_relink_byte_identical": true,
+      "canonical_parent": "/workspace/HyperHEN-v0.9.4-R45-20261030",
+      "compiled_sources": [
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_elfldr/source/pt.c",
+          "sha256": "d62f4518f1c3e8491e3fe714be637dcb20340eccf41acbc31faae300b4ba005b"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_elfldr/source/elfldr.c",
+          "sha256": "35e28b05c82fb3077f007057ed0f3fbaebff218f5ec004dedf4bea3641920c3d"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/third_party/tachen-plugin-runtime/elf-image.c",
+          "sha256": "eb796109903af2daa55469f44cca3dfd02dfacc3b1439fa8d820de8ca280b7b5"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/third_party/tachen-plugin-runtime/elf-map.c",
+          "sha256": "b90bd6fd3510b7555f9fe8271ac76065f7784a9fbb147a953e0cd60e25c3dfb7"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_ipc/source/ipc_client.cpp",
+          "sha256": "9023ae443eade7c7d559bc1481cd898c70814d07841297f817ccdbbbc0927697"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_ipc/source/ipc_server.cpp",
+          "sha256": "cf6e71b60fffe86421d6255baa51c6961f8ea6890ecdc9fa16c5185f120c657d"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_payload/source/payload.c",
+          "sha256": "ca1d4289cd802727018cda3316a067836778ccbb2978788d47fd4baadf10d1a6"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_payload/source/payload_config.c",
+          "sha256": "4fbe1a862840f1059d2c72228c17584f145413ce51239553c9fe61cfd98976fc"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_platform/source/fs.c",
+          "sha256": "03a45d51502c177aaa05cc8001e6d80ff4dccbb633fd900ae9a156ba30e5e244"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_platform/source/tree.c",
+          "sha256": "df6db33cb15004bd779ff8c921641708695ac8a387827cd692e05a019656f64d"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_platform/source/log.c",
+          "sha256": "bfb0196179dcb37ad35671daa6cb11d2cef26e299b46e5166dfca4e2bd69c2b3"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_platform/source/net.c",
+          "sha256": "aa008f3182f9c52acf3115b6db85fe938efbea9ac9ea5dfa7438f1b12577e925"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_platform/source/notify.c",
+          "sha256": "f0ad2be74d1d30885bad610175ac7081467ad4a5989833e97ebb0190aad7e0ca"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_platform/source/notify_i18n.c",
+          "sha256": "029aa450d51f11b1756249ba60a789cee65ee9b79388e16aea3d59bffdaeae45"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/third_party/cjson/cJSON.cpp",
+          "sha256": "60186aad9725421652a4784222fa8a9acf37dc3aa27f71ddb04fe167bbd5c2d5"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_proc/source/proc.cpp",
+          "sha256": "053ca100e8034815f9bbec5f77f2ca719bb1e0aa198f9fd610cd0793d2edec60"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_proc/source/ucred.cpp",
+          "sha256": "b1fdb1b550c49e9280a3fb7544792f508ba06fdb15f7f8766c547a6b39015074"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_proc/source/proc_query.cpp",
+          "sha256": "8e0a0889901864775b3ac883416dd10f21c2f6bd78f87ef04dc822a7528868d7"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_proc/source/proc_dmap.cpp",
+          "sha256": "88dafe30984774bba4c70fb16a8a47162a284f4d49fef2c9cdb94e676c33a482"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_ready/source/ready.c",
+          "sha256": "a6c899fbdfe0ae3b56ff82b43175cc0473cad9a0f88ece50ca3c0ddabe06cbd5"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/libonion_settings/source/settings.cpp",
+          "sha256": "a1cbe5c057b911c37d4e0e39b72ff1e3cd2fd8a1f61f61bb96c3c6c895bacfda"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/hyperdeck/server.cpp",
+          "sha256": "b7a9a30e82fa48b889e9589e73d2354271054a46445ed5381c40cd03feee47f5"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/hyperdeck/backend_ps5.cpp",
+          "sha256": "8619f9e8f18e5d7442d108b27dfc2b2871593b93be15aafac6af03a36b9d11e0"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/hyperdeck/engine_runtime_ps5.cpp",
+          "sha256": "b8cb089a651140705cb1820d08395ba101e0df8eabab70133058ae324ddccbb5"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/hyperdeck/pkg_catalog.cpp",
+          "sha256": "d7654de73ea475fd41c962ca36a5fb30aa4fcbba615669f118c3cde04c75a969"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/hyperdeck/pkg_transport_ps5.cpp",
+          "sha256": "7acfd603202f522b6ae1b146d0926a1e362d4240ab418984dae30bcf54051e18"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/hyperdeck/json.cpp",
+          "sha256": "9d7c8fc8bf1c088e6ba8d5b37e3162a7baeb86a2ed4a0ee090476b3933fa0704"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/build-release/hyperdeck/hyperdeck_assets.c",
+          "sha256": "b60b533eef7484d129fb25641392958e3ed97c7e75c5a789f8d9916ef5f6ec9e"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/third_party/websrv/src/asset.c",
+          "sha256": "951cdf593f4ca4dfc917a359a43f120e1c747a90bfef7f4dd66eb1b4dbe90908"
+        },
+        {
+          "source": "/workspace/HyperHEN-v0.9.4-R45-20261030/source/common/elfldr_remote.c",
+          "sha256": "846544adc518eb35ac0555186106a6e5e26e9d25b5a074a0f11800d9f9700c28"
+        }
+      ]
+    }
+  },
+  "scope": "Exact canonical component source ancestry plus all frozen objects; active R71 main source remains unchanged"
+}

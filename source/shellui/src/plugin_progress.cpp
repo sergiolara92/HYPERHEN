@@ -18,6 +18,7 @@
 #include "dynamic_ui_runtime.hpp"
 
 #include <onion/ipc_client.hpp>
+#include <onion/plugin_diagnostic.hpp>
 #include <onion/platform.h>
 
 #include <algorithm>
@@ -42,7 +43,7 @@ constexpr const char *kUpdatePanelNamespace =
     "Sce.Vsh.ShellUI.Settings.Peripherals.MorpheusUpdateUI3";
 constexpr const char *kUpdatePanelClass = "UpdateProgressPanel";
 
-enum class ProgressState { Idle, Running, Ok, Error };
+enum class ProgressState { Idle, Running, Pending, Ok, Error };
 
 struct BoundWidget {
   MonoObject *object = nullptr;
@@ -81,7 +82,7 @@ namespace {
 toolbox::ProgressAutoReturn g_plugin_auto_return({
     toolbox::Page::PluginProgress,
     800,  // success dwell ms
-    2000  // error dwell ms
+    8000  // error dwell ms: enough time to read the bounded diagnostic
 });
 
 } // namespace
@@ -192,6 +193,13 @@ Presentation presentation_locked() {
     view.percent = std::to_string(view.bar_progress) + '%';
     return view;
   }
+  case ProgressState::Pending:
+    view.phase = toolbox_i18n::tr("sprx.manual.pending");
+    // No fabricated percentage or completion. Leave the page with Back/PS
+    // and return to the game so its controller callback can initialize it.
+    view.percent.clear();
+    view.bar_progress = 0;
+    return view;
   case ProgressState::Ok:
     view.phase = toolbox_i18n::tr("plugins.external.progress_completed");
     view.percent = "100%";
@@ -199,6 +207,7 @@ Presentation presentation_locked() {
     return view;
   case ProgressState::Error:
     view.phase = toolbox_i18n::tr("plugins.external.progress_failed");
+    if (!g_progress.error.empty()) view.phase += "\n" + g_progress.error;
     view.bar_progress = std::clamp(g_progress.progress, 0, 100);
     view.bar_status = 2;
     return view;
@@ -525,8 +534,10 @@ void *plugin_progress_worker(void *raw) {
   }
 
   IPC_Client &ipc = IPC_Client::getInstance(false);
-  const bool ok = args->sprx ? ipc.SetSprxEnabled(plugin_id, is_start)
-                            : (is_start ? ipc.StartPlugin(plugin_id) : ipc.StopPlugin(plugin_id));
+  std::string detail;
+  const bool ok = args->sprx ? ipc.SetSprxEnabled(plugin_id, is_start, &detail)
+                            : (is_start ? ipc.StartPlugin(plugin_id, &detail)
+                                        : ipc.StopPlugin(plugin_id, &detail));
 
   if (!session_is_current(generation)) return nullptr;
 
@@ -534,8 +545,19 @@ void *plugin_progress_worker(void *raw) {
     std::lock_guard<std::mutex> lock(g_progress.mu);
     if (!session_is_current(generation)) return nullptr;
     g_progress.state = ProgressState::Error;
-    g_progress.error = "operation_failed";
+    g_progress.error = onion::ipc::plugin_diagnostic(detail);
     LOG_ERROR("plugin_progress: IPC failed for %s is_start=%d", plugin_id.c_str(), is_start);
+    return nullptr;
+  }
+
+  if (args->sprx && is_start && onion::ipc::plugin_operation_pending(ok, detail)) {
+    std::lock_guard<std::mutex> lock(g_progress.mu);
+    if (!session_is_current(generation)) return nullptr;
+    g_progress.state = ProgressState::Pending;
+    g_progress.progress = 0;
+    g_progress.displayed_progress = 0;
+    g_progress.phase = "pending-return-to-game";
+    LOG_INFO("plugin_progress: %s queued; return to game, initialization unconfirmed", plugin_id.c_str());
     return nullptr;
   }
 

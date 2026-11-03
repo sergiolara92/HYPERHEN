@@ -1,19 +1,29 @@
-# Hyper worker (R45)
+# Hyper worker (R52)
 
 This is the local speech-to-text, dialogue and speech-synthesis worker embedded
-in HyperHEN 0.9.4. `runtime/` contains the R45 first-party sources (the worker header include is made relative to the published include root; runtime behavior is unchanged) and
+in HyperHEN 0.9.5. `runtime/` contains the R52 first-party sources (worker
+header includes are relative to the published include root) and
 `streaming/` contains its reusable 512 MiB weight arena. Model weights remain
 external in `/data/Hyper`; no model is included in this source tree or the ELF.
 
-The smallest model is the confirmed working voice configuration. Larger models
-remain experimental. The latest 7B console test loaded successfully but reached
-the 90-second reply deadline before speech playback. Compilation or the host
-tests do not establish usable real-time performance on PS5. No GPU backend is
-enabled in this version.
+Qwen2.5 0.5B Q4_K_M is the recommended, console-confirmed starting point.
+Qwen2.5 7B Q5_K_M completed one Italian microphone-to-speaker turn on FW 10.01
+in R51, taking about 138 seconds overall. The R52 worker retains that reply
+policy and conversation-prefix reuse, and optimizes CPU callbacks and weight
+access. There is no new console latency measurement for these optimizations.
+Other unconfirmed models remain beta; 7B is experimental and very slow.
+Compilation and host tests do not establish usable real-time performance.
+Inference uses the CPU.
+
+Disable Hyper and wait for its model to unload before demanding games or
+plugin tests. A resident 7B model was associated with a GTA V black screen
+with audio in a reported test; the game opened with Hyper disabled. The
+512 MiB weight arena is only part of the assistant's memory use. Concurrent
+7B/game operation is not a validated configuration.
 
 ## Build
 
-The ordinary `scripts/build_release.sh` preserves the checksum-pinned R45 worker.
+The ordinary `scripts/build_release.sh` preserves the checksum-pinned R52 worker.
 To rebuild that worker separately with the same retained seven AI libraries:
 
 ```bash
@@ -24,7 +34,7 @@ python3 scripts/build_hyper_worker.py --jobs 4
 
 The versioned build-input ZIP must be extracted first. The recipe verifies the
 AI libraries and the isolated CRT and links that CRT last. It never modifies
-the installed SDK. The output is `build-hyper-worker/Hyper-Assistant-R45.elf`.
+the installed SDK. The output is `build-hyper-worker/Hyper-Assistant-R52.elf`.
 The recipe is relocatable; no original development workspace is required.
 
 ## AI source and provenance

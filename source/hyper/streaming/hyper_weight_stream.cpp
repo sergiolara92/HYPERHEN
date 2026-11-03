@@ -20,6 +20,7 @@
 #include <mutex>
 #include <new>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 #include <vector>
 
@@ -79,6 +80,20 @@ struct hyper_weight_stream {
 };
 
 namespace {
+static uint64_t monotonic_us() {
+    struct timespec ts = {};
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0 || ts.tv_sec < 0 ||
+        ts.tv_nsec < 0 || ts.tv_nsec >= 1000000000) return 0;
+    if (static_cast<uint64_t>(ts.tv_sec) >
+        (std::numeric_limits<uint64_t>::max() - 999999) / 1000000) return 0;
+    return static_cast<uint64_t>(ts.tv_sec) * 1000000 +
+        static_cast<uint64_t>(ts.tv_nsec) / 1000;
+}
+static void add_elapsed(uint64_t start, uint64_t * total) {
+    const uint64_t end = monotonic_us();
+    if (start && end >= start && end - start <= std::numeric_limits<uint64_t>::max() - *total)
+        *total += end - start;
+}
 struct buffer_state {
     hyper_weight_stream * stream;
     void * placeholders = nullptr;
@@ -186,8 +201,12 @@ static bool read_bytes(hyper_weight_stream * p, const weight_key & key,
     while (done < count) {
         if (cancelled(p)) return false;
         size_t amount = std::min(io_chunk, count - done);
+        const uint64_t read_start = monotonic_us();
         ssize_t n = pread(file->fd, static_cast<char *>(out) + done, amount,
                          static_cast<off_t>(key.offset + offset + done));
+        const int read_errno = errno;
+        add_elapsed(read_start, &p->stats.read_time_us);
+        errno = read_errno;
         if (n < 0 && errno == EINTR) continue;
         if (n <= 0 || static_cast<size_t>(n) > amount) {
             set_error(p, HYPER_STREAM_IO); return false;
@@ -482,6 +501,105 @@ static bool metadata_operation(const ggml_tensor * node) {
         default: return false;
     }
 }
+static bool node_uses_weights(const ggml_tensor * node) {
+    if (provider_of(node)) return true;
+    for (const ggml_tensor * source : node->src) if (provider_of(source)) return true;
+    return false;
+}
+
+// The general CPU path materializes a whole matrix before GET_ROWS. A normal
+// token embedding consumes only 1..ubatch rows. Use the same quantized-to-float
+// function as upstream GET_ROWS, with each temporary row occupying the existing
+// arena. The narrow shape/layout guard keeps arbitrary views and batched tables
+// on the general path. No model-sized scratch allocation or persistent row map.
+static ggml_status gather_rows(hyper_weight_stream * p, ggml_tensor * node, bool * handled) {
+    *handled = false;
+    if (node->op != GGML_OP_GET_ROWS || !(node->flags & GGML_TENSOR_FLAG_COMPUTE) ||
+        provider_of(node)) return GGML_STATUS_SUCCESS;
+    const ggml_tensor * table = node->src[0];
+    const ggml_tensor * index = node->src[1];
+    if (!table || !index || provider_of(table) != p || provider_of(index) ||
+        table->view_src || table->ne[0] <= 0 || table->ne[1] <= 1 ||
+        table->ne[2] != 1 || table->ne[3] != 1 || !ggml_is_contiguous(table) ||
+        index->type != GGML_TYPE_I32 || index->ne[0] <= 0 ||
+        index->ne[1] != 1 || index->ne[2] != 1 || index->ne[3] != 1 ||
+        !ggml_is_contiguous(index) || !index->data ||
+        (index->buffer && !ggml_backend_buft_is_host(index->buffer->buft)) ||
+        node->type != GGML_TYPE_F32 || node->ne[0] != table->ne[0] ||
+        node->ne[1] != index->ne[0] || node->ne[2] != 1 || node->ne[3] != 1 ||
+        !ggml_is_contiguous(node) || !node->data ||
+        (node->buffer && !ggml_backend_buft_is_host(node->buffer->buft))) return GGML_STATUS_SUCCESS;
+    // Quantized embeddings and F32 need the exact same converter/copy as CPU
+    // GET_ROWS. Other types deliberately retain the original implementation.
+    const auto * traits = ggml_get_type_traits(table->type);
+    if (table->type != GGML_TYPE_F32 &&
+        (!ggml_is_quantized(table->type) || !traits || !traits->to_float)) return GGML_STATUS_SUCCESS;
+    const uintptr_t out_at = reinterpret_cast<uintptr_t>(node->data);
+    const uintptr_t idx_at = reinterpret_cast<uintptr_t>(index->data);
+    const size_t out_size = ggml_nbytes(node), idx_size = ggml_nbytes(index);
+    if (out_size > std::numeric_limits<uintptr_t>::max() - out_at ||
+        idx_size > std::numeric_limits<uintptr_t>::max() - idx_at ||
+        (out_at < idx_at + idx_size && idx_at < out_at + out_size)) return GGML_STATUS_SUCCESS;
+    *handled = true;
+    auto record = p->tensors.find(table);
+    if (record == p->tensors.end() || !record->second.entry) {
+        set_error(p, HYPER_STREAM_INVALID); return failure_status(p);
+    }
+    weight * full = record->second.entry;
+    const size_t row_bytes = ggml_row_size(table->type, table->ne[0]);
+    if (!row_bytes || row_bytes != table->nb[1] || full->key.file >= p->files.size() ||
+        static_cast<uint64_t>(table->ne[1]) > full->key.bytes / row_bytes) {
+        set_error(p, HYPER_STREAM_INVALID); return failure_status(p);
+    }
+    const int32_t * indices = static_cast<const int32_t *>(index->data);
+    // Reject malformed indices before any output is changed, just as the CPU
+    // kernel requires every row to be within the table. Do not turn bad input
+    // into an unchecked file offset.
+    for (int64_t i = 0; i < index->ne[0]; ++i) if (indices[i] < 0 || indices[i] >= table->ne[1]) {
+        set_error(p, HYPER_STREAM_INVALID); return failure_status(p);
+    }
+    if (!source_unchanged(p, *p->files[full->key.file])) return failure_status(p);
+    for (int64_t i = 0; i < index->ne[0]; ++i) {
+        if (cancelled(p)) return failure_status(p);
+        const size_t offset = static_cast<size_t>(indices[i]) * row_bytes;
+        const void * data = full->data ? static_cast<const char *>(full->data) + offset : nullptr;
+        // Reuse a previously resident full table without making a second copy.
+        // Otherwise a temporary, registered arena range participates in the
+        // same overlap/eviction checks as normal weights and is erased below.
+        struct row_lease {
+            hyper_weight_stream * p;
+            std::map<weight_key, std::unique_ptr<weight>>::iterator it;
+            bool inserted = false, pinned = false;
+            ~row_lease() {
+                if (pinned) unpin(it->second.get());
+                if (inserted) { evict(p, it->second.get()); p->weights.erase(it); }
+            }
+        } lease{p, p->weights.end(), false, false};
+        if (!data) {
+            weight_key key{full->key.file, full->key.offset + offset, row_bytes};
+            auto found = p->weights.find(key);
+            if (found == p->weights.end()) {
+                auto row = std::make_unique<weight>(); row->key = key;
+                auto result = p->weights.emplace(key, std::move(row));
+                found = result.first; lease.inserted = result.second;
+            }
+            lease.it = found;
+            const uint64_t before = p->stats.bytes_read;
+            if (!pin(p, found->second.get())) return failure_status(p);
+            lease.pinned = true;
+            p->stats.gathered_row_bytes += p->stats.bytes_read - before;
+            data = found->second->data;
+        } else {
+            ++p->stats.cache_hits; full->used = ++p->clock;
+        }
+        float * output = reinterpret_cast<float *>(static_cast<char *>(node->data) + static_cast<size_t>(i) * node->nb[1]);
+        if (table->type == GGML_TYPE_F32) memcpy(output, data, row_bytes);
+        else traits->to_float(data, output, table->ne[0]);
+        ++p->stats.gathered_rows;
+    }
+    if (cancelled(p) || !source_unchanged(p, *p->files[full->key.file])) return failure_status(p);
+    return GGML_STATUS_SUCCESS;
+}
 static hyper_weight_stream * graph_provider(const ggml_cgraph * graph, bool * multiple) {
     hyper_weight_stream * found = nullptr;
     *multiple = false;
@@ -620,10 +738,16 @@ extern "C" ggml_status hyper_weight_stream_compute(ggml_cgraph * graph,
             if (provider_of(node) && !metadata_operation(node)) {
                 set_error(p, HYPER_STREAM_UNSUPPORTED); return GGML_STATUS_FAILED;
             }
-            bool uses_weight = provider_of(node) != nullptr;
-            for (ggml_tensor * source : node->src) uses_weight |= provider_of(source) != nullptr;
+            const bool uses_weight = node_uses_weights(node);
             if (uses_weight && !weight_operation_allowed(node)) {
                 set_error(p, HYPER_STREAM_UNSUPPORTED); return GGML_STATUS_FAILED;
+            }
+            bool gathered = false;
+            const ggml_status gather_status = gather_rows(p, node, &gathered);
+            if (gathered) {
+                if (gather_status != GGML_STATUS_SUCCESS) return gather_status;
+                ++p->stats.nodes_computed;
+                continue;
             }
             node_pins pins{p, {}, {}};
             if (!pins.prepare(node)) return failure_status(p);
@@ -633,10 +757,20 @@ extern "C" ggml_status hyper_weight_stream_compute(ggml_cgraph * graph,
                 if (!pins.materialize(source)) return failure_status(p);
             }
             if (!pins.materialize(node)) return failure_status(p);
-            ggml_cgraph one = ggml_graph_view(graph, i, i + 1);
-            const ggml_status status = compute(user, &one);
+            // Follow the current operation with nodes that reference no stream
+            // weights. Keeping this node's operands pinned admits no new weight
+            // storage and preserves graph order, but avoids a new plan/pool wake
+            // for every metadata, attention, normalization and activation op.
+            int end = i + 1;
+            while (end < graph->n_nodes && !node_uses_weights(graph->nodes[end])) ++end;
+            ggml_cgraph span = ggml_graph_view(graph, i, end);
+            const uint64_t compute_start = monotonic_us();
+            ++p->stats.compute_dispatches;
+            const ggml_status status = compute(user, &span);
+            add_elapsed(compute_start, &p->stats.compute_time_us);
             if (status != GGML_STATUS_SUCCESS) return status;
-            ++p->stats.nodes_computed;
+            p->stats.nodes_computed += static_cast<uint64_t>(end - i);
+            i = end - 1;
             // pins destructor restores all aliases and releases entries only
             // after the synchronous CPU graph-compute barrier has completed.
         }

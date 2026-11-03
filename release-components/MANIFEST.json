@@ -1,12 +1,13 @@
 {
   "product": "HyperHEN",
-  "version": "0.9.4",
-  "base_revision": "R45",
+  "version": "0.9.5",
+  "base_revision": "R71",
+  "development_revision": "R72",
   "files": [
     {
       "path": "automount.elf",
-      "size_bytes": 3510032,
-      "sha256": "956b6a70829306f97058df6c68dca1b061794eb2ddf386a3855d0cdce4d2c8d8",
+      "size_bytes": 3582112,
+      "sha256": "345a9c34ab5d7ea980172ebecc851d04345119152bd8cd206de0a4099a5d4c0c",
       "executable": false
     },
     {
@@ -17,8 +18,8 @@
     },
     {
       "path": "daemon.elf",
-      "size_bytes": 43987856,
-      "sha256": "91713987a3a416cfa0b7229f411b973ccff1e98027d06076a17bc78f32ee47fe",
+      "size_bytes": 44103112,
+      "sha256": "3cae821bbc28b6303d57f61730210b75b6116952dca2ce1e99ec2af7fd673297",
       "executable": false
     },
     {
@@ -40,9 +41,9 @@
       "executable": false
     },
     {
-      "path": "hyper_assistant_r45.elf",
-      "size_bytes": 7297960,
-      "sha256": "c954b1960829e5b02096f6ad087bf44e144f541e8b2a22462d2bed60c22ec230",
+      "path": "hyper_assistant_r52.elf",
+      "size_bytes": 7316168,
+      "sha256": "a56ee4d551cd9041180af9d194384af9bbc3bb321c6a3f5e41b0115e0dd1ac57",
       "executable": false
     },
     {
@@ -53,8 +54,8 @@
     },
     {
       "path": "hypercore_1270.elf",
-      "size_bytes": 1783568,
-      "sha256": "07b8f1db78955332299873feaaa1c751b6b4af71cbb0b104bbc07442fb92cd2e",
+      "size_bytes": 1802256,
+      "sha256": "cc39420e2e3be0b23559d2d4223bc480f281201a206cd72e72e3a96c9a8a31b1",
       "executable": false
     },
     {
@@ -78,7 +79,7 @@
     {
       "path": "hyperdeck-websrv.elf",
       "size_bytes": 14502320,
-      "sha256": "49064708a97a38da2fb60cf4a2dfe44fec566e73fa47605ad1b98da03d4b7822",
+      "sha256": "9fe1148912100ec18862a5102936418efedafcab3abd9aa54d741993871d5249",
       "executable": false
     },
     {
@@ -149,8 +150,8 @@
     },
     {
       "path": "lite_automount.elf",
-      "size_bytes": 3493648,
-      "sha256": "a9c28769c350c78f32655bba2e979ba046411fbbc6466fd0c34b5bcc159715c7",
+      "size_bytes": 3549344,
+      "sha256": "cbe90f0214fb62b4768bd4e24d613810702ecca411fb0a98a2707cf0d99c3e5b",
       "executable": false
     },
     {
@@ -186,7 +187,7 @@
     {
       "path": "shellui.elf",
       "size_bytes": 3249152,
-      "sha256": "d20019b0f54562ea6700a3a8edfa90e70bc07ca13c161d3bc55a3fa2f9779fff",
+      "sha256": "58e2e72de95991d42eeca8b2f0d6ad0758fe20136bd07329442eddfbfc427c89",
       "executable": false
     },
     {

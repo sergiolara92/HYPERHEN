@@ -8,6 +8,9 @@
 // Return true when fakelib backport automation is enabled.
 // Sandbox directory mounting is always enabled for supported game titles.
 bool sm_fakelib_game_feature_enabled(void);
+// Protect the mounted overlay source, including retained cleanup sessions.
+// General /data and storage-root aliases do not protect unrelated children.
+bool sm_fakelib_source_is_in_use(const char *path);
 // Prepare or refresh the combined fakelib cache before title runtime mounting.
 void sm_fakelib_prepare_title_cache(const char *title_id,
                                     const char *game_path);

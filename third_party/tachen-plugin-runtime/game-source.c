@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "plugin-filesystem.h"
 #include "game-source.h"
 #include "game-info.h"
 #include <sys/types.h>
@@ -54,12 +55,12 @@ int hhp_game_sandbox_open_path(int pid,const char* generation,const char* title,
  while((entry=readdir(directory))){
   if(++count>4096){if(root>=0)close(root);root=-1;reason="Sandbox listing exceeded its bounded inspection limit";goto done;}
   if(!sandbox_name(entry->d_name,title))continue;
-  int candidate=openat(dirfd(directory),entry->d_name,O_RDONLY|O_DIRECTORY|O_NOFOLLOW);if(candidate<0)continue;
+  int candidate=hhp_fs_openat(dirfd(directory),entry->d_name,O_RDONLY|O_DIRECTORY|O_NOFOLLOW, 0);if(candidate<0)continue;
   if(!global&&kernel_get_proc_file(getpid(),candidate)!=expected){close(candidate);continue;}
   // Some legitimate game loaders deliberately jailbreak both root/jaildir.
   // In that case retain the unique active app0 fallback, ignoring empty stale
   // directories, rather than requiring the game to remain sandboxed.
-  if(global){int app=openat(candidate,"app0",O_RDONLY|O_DIRECTORY|O_NOFOLLOW);if(app<0){close(candidate);continue;}close(app);
+  if(global){int app=hhp_fs_openat(candidate,"app0",O_RDONLY|O_DIRECTORY|O_NOFOLLOW, 0);if(app<0){close(candidate);continue;}close(app);
    if(root>=0){close(candidate);close(root);root=-1;reason="More than one active sandbox matches the game";goto done;}}
   root=candidate;snprintf(selected,sizeof selected,"%s",entry->d_name);if(!global)break;
  }
@@ -76,7 +77,7 @@ int hhp_game_sandbox_open(int pid,const char* generation,const char* title,char*
 static int registered_open(const char* title){
  const char* parts[]={"system_data","priv","appmeta",title};
  int fd=open("/",O_RDONLY|O_DIRECTORY|O_NOFOLLOW);if(fd<0)return -1;
- for(unsigned i=0;i<4;i++){int next=openat(fd,parts[i],O_RDONLY|O_DIRECTORY|O_NOFOLLOW);int error=errno;close(fd);fd=next;errno=error;if(fd<0)break;}
+ for(unsigned i=0;i<4;i++){int next=hhp_fs_openat(fd,parts[i],O_RDONLY|O_DIRECTORY|O_NOFOLLOW, 0);int error=errno;close(fd);fd=next;errno=error;if(fd<0)break;}
  return fd;
 }
 int hhp_game_metadata_read_ex(int pid,const char* generation,const char* title,unsigned char** output,size_t* length,char* message,size_t capacity,int* registered){
@@ -85,15 +86,26 @@ int hhp_game_metadata_read_ex(int pid,const char* generation,const char* title,u
  const char* reason="Running application metadata could not be read";char sandbox_reason[192],stat_reason[192];*output=NULL;*length=0;
  root=hhp_game_sandbox_open(pid,generation,title,sandbox_reason,sizeof sandbox_reason);
  if(root<0){reason=sandbox_reason;goto done;}
- app=openat(root,"app0",O_RDONLY|O_DIRECTORY|O_NOFOLLOW);if(app<0)goto done;
- sys=openat(app,"sce_sys",O_RDONLY|O_DIRECTORY|O_NOFOLLOW);if(sys<0)goto done;
+ app=hhp_fs_openat(root,"app0",O_RDONLY|O_DIRECTORY|O_NOFOLLOW, 0);if(app<0)goto done;
+ sys=hhp_fs_openat(app,"sce_sys",O_RDONLY|O_DIRECTORY|O_NOFOLLOW, 0);if(sys<0)goto done;
  int ps5=!memcmp(title,"PPS",3)||!memcmp(title,"MOUU",4);const char* name=ps5?"param.json":"param.sfo";
- file=openat(sys,name,O_RDONLY|O_NOFOLLOW|O_NONBLOCK);
- if(file<0&&!ps5&&errno==ENOENT){
-  // Do not substitute cached metadata for an inaccessible/corrupt mounted
-  // file, or for a sandbox that could not itself be verified and opened.
+ file=hhp_fs_openat(sys,name,O_RDONLY|O_NOFOLLOW|O_NONBLOCK, 0);
+ int mounted_absent=file<0&&errno==ENOENT;
+ int virtual_mounted_sfo=0;
+ if(file>=0&&!ps5){
+  struct stat mounted={0};
+  // Some PS4 game mounts return a character-device placeholder for param.sfo.
+  // It has no readable metadata; use the same registered-title fallback as
+  // an absent mounted file, while keeping all existing identity/time checks.
+  if(!fstat(file,&mounted)&&S_ISCHR(mounted.st_mode)&&mounted.st_size==0){
+   close(file);file=-1;virtual_mounted_sfo=1;
+  }
+ }
+ if(!ps5&&(mounted_absent||virtual_mounted_sfo)){
+  // Do not substitute cached metadata for any other inaccessible/corrupt
+  // mounted file, or for a sandbox that was not verified and opened.
   close(sys);sys=registered_open(title);if(sys<0)goto done;
-  file=openat(sys,name,O_RDONLY|O_NOFOLLOW|O_NONBLOCK);fallback=1;
+  file=hhp_fs_openat(sys,name,O_RDONLY|O_NOFOLLOW|O_NONBLOCK, 0);fallback=1;
  }
  if(file<0)goto done;
  struct stat before,after,named;

@@ -38,6 +38,8 @@ inline bool split_control_id(std::string_view control_id,
 
 std::string plugin_list_status(bool running, bool auto_start);
 std::string sprx_list_status(const SprxInventoryItem &entry);
+std::string sprx_display_name(const SprxInventoryItem &entry);
+void append_sprx_page_link(ps5ui::Page &page);
 
 void append_plugin_list_links(
     ps5ui::Page &page, const std::vector<PluginInventoryItem> &plugins);
